@@ -38,7 +38,6 @@ export class NotificationService implements OnDestroy {
   connect(token: string): void {
     this.currentToken = token;
     this.openEventSource(token);
-    this.startPolling();
     this.loadAll().subscribe();
   }
 
@@ -83,7 +82,7 @@ export class NotificationService implements OnDestroy {
   }
 
   private startPolling(): void {
-    this.stopPolling();
+    if (this.pollTimer) return;
     this.pollTimer = setInterval(() => {
       this.refreshFromServer().subscribe();
     }, this.POLL_INTERVAL_MS);
