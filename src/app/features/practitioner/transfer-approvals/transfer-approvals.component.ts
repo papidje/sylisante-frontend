@@ -77,6 +77,12 @@ interface SelectableReport extends SharedReportDto {
                 @if (loadingReports() === t.id) {
                   <div class="text-center py-4 text-gray-400 text-sm">Chargement des comptes rendus…</div>
                 } @else if (selectableReports().has(t.id)) {
+                  @if (selectableReports().get(t.id)!.length === 0) {
+                    <div class="p-4 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+                      <strong>Aucun compte rendu disponible</strong> pour {{ t.patientName }} dans votre dossier.
+                      Vous ne pouvez pas partager de documents. Vous pouvez refuser cette demande.
+                    </div>
+                  } @else {
                   <div>
                     <div class="flex items-center justify-between mb-3">
                       <h3 class="text-sm font-semibold text-gray-700">
@@ -109,6 +115,7 @@ interface SelectableReport extends SharedReportDto {
                       {{ selectedCount(t.id) }} / {{ selectableReports().get(t.id)!.length }} sélectionné{{ selectedCount(t.id) !== 1 ? 's' : '' }}
                     </p>
                   </div>
+                  }
                 } @else {
                   <button (click)="loadSelectableReports(t.id)"
                           class="text-sm text-primary-600 hover:text-primary-700 flex items-center gap-1.5">
@@ -134,7 +141,7 @@ interface SelectableReport extends SharedReportDto {
                     Refuser
                   </button>
                   <button (click)="approveTransfer(t)"
-                          [disabled]="processingId() === t.id || selectedCount(t.id) === 0"
+                          [disabled]="processingId() === t.id || selectedCount(t.id) === 0 || (selectableReports().has(t.id) && selectableReports().get(t.id)!.length === 0)"
                           class="btn-primary text-sm px-5 disabled:opacity-50 disabled:cursor-not-allowed">
                     @if (processingId() === t.id) {
                       <app-syli-spinner size="xs" class="mr-2 inline-block align-middle" />
@@ -164,7 +171,11 @@ export class TransferApprovalsComponent implements OnInit {
   ngOnInit(): void {
     this.loading.set(true);
     this.transferService.getPendingApprovals().subscribe({
-      next: list => { this.pendingTransfers.set(list); this.loading.set(false); },
+      next: list => {
+        this.pendingTransfers.set(list);
+        this.loading.set(false);
+        list.forEach(t => this.loadSelectableReports(t.id));
+      },
       error: () => this.loading.set(false),
     });
   }
@@ -179,7 +190,12 @@ export class TransferApprovalsComponent implements OnInit {
         this.selectableReports.set(map);
         this.loadingReports.set(null);
       },
-      error: () => this.loadingReports.set(null),
+      error: (err) => {
+        const errMap = new Map(this.errorByTransfer());
+        errMap.set(transferId, err?.error?.detail ?? 'Impossible de charger les comptes rendus.');
+        this.errorByTransfer.set(errMap);
+        this.loadingReports.set(null);
+      },
     });
   }
 
@@ -211,7 +227,7 @@ export class TransferApprovalsComponent implements OnInit {
       },
       error: (err) => {
         const errMap = new Map(this.errorByTransfer());
-        errMap.set(transfer.id, err?.error?.message ?? 'Erreur lors de l\'approbation');
+        errMap.set(transfer.id, err?.error?.detail ?? err?.error?.message ?? 'Erreur lors de l\'approbation');
         this.errorByTransfer.set(errMap);
         this.processingId.set(null);
       },

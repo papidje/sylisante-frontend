@@ -9,6 +9,7 @@ export type NotificationType =
   | 'TRANSFER_REQUEST'
   | 'TRANSFER_APPROVED'
   | 'TRANSFER_REJECTED'
+  | 'TRANSFER_RECEIVED'
   | 'ACCOUNT_SUSPENDED'
   | 'ACCOUNT_ACTIVATED';
 
@@ -41,6 +42,7 @@ export const NOTIFICATION_ICONS: Record<NotificationType, string> = {
   TRANSFER_REQUEST:       '📤',
   TRANSFER_APPROVED:      '🔓',
   TRANSFER_REJECTED:      '🔒',
+  TRANSFER_RECEIVED:      '📥',
   ACCOUNT_SUSPENDED:      '🚫',
   ACCOUNT_ACTIVATED:      '🎉',
 };
@@ -51,7 +53,8 @@ export function notificationRoute(n: NotificationDto): string | null {
   if (n.referenceType === 'APPOINTMENT') return '/appointments';
   if (n.referenceType === 'TRANSFER') {
     if (n.type === 'TRANSFER_REQUEST') return '/transfer-approvals';
-    if (n.type === 'TRANSFER_APPROVED') return '/shared-records';
+    if (n.type === 'TRANSFER_RECEIVED') return '/shared-records';
+    if (n.type === 'TRANSFER_APPROVED' || n.type === 'TRANSFER_REJECTED') return '/my-transfers';
     return '/my-transfers';
   }
   return null;

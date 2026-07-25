@@ -16,9 +16,10 @@ export class PractitionerService {
     return this.http.get<PractitionerProfileDto[]>('/api/practitioners/public');
   }
 
-  search(cityId: number | null, specialtyId: number): Observable<PractitionerSearchResult[]> {
-    let params = new HttpParams().set('specialtyId', specialtyId);
+  search(cityId: number | null, specialtyId: number | null): Observable<PractitionerSearchResult[]> {
+    let params = new HttpParams();
     if (cityId) params = params.set('cityId', cityId);
+    if (specialtyId) params = params.set('specialtyId', specialtyId);
     return this.http.get<PractitionerSearchResult[]>('/api/practitioners/public/search', { params });
   }
 

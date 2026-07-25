@@ -27,6 +27,11 @@ export class ReportTransferService {
     return this.http.delete<{ message: string }>(`${this.base}/${id}/cancel`);
   }
 
+  getSourceReportCount(sourcePractitionerId: number): Observable<{ count: number; hasReports: boolean }> {
+    return this.http.get<{ count: number; hasReports: boolean }>(
+      `${this.base}/source-report-count/${sourcePractitionerId}`);
+  }
+
   // Source practitioner
   getPendingApprovals(): Observable<TransferResponse[]> {
     return this.http.get<TransferResponse[]>(`${this.base}/pending-approvals`);

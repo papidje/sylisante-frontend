@@ -35,6 +35,7 @@ export interface PractitionerSearchResult {
   bio: string | null;
   appointmentInstructions: string | null;
   specialtyName: string | null;
+  specialtyId: number | null;
   consultationDurationMinutes: number;
   merchantNumber: string | null;
   firstAvailableDate: string;

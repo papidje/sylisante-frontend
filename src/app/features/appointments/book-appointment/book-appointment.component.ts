@@ -71,11 +71,9 @@ type BookingStep = 'search' | 'select-slot' | 'payment-instructions' | 'submit-r
             <form [formGroup]="searchForm" (ngSubmit)="doSearch()" class="space-y-4">
               <div class="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label for="cityId" class="block text-sm font-medium text-gray-700 mb-1">
-                    Ville <span class="text-red-500">*</span>
-                  </label>
+                  <label for="cityId" class="block text-sm font-medium text-gray-700 mb-1">Ville</label>
                   <select id="cityId" formControlName="cityId" class="input-field">
-                    <option value="">Toutes les villes</option>
+                    <option value="">Choisir une ville</option>
                     @for (city of cities(); track city.id) {
                       <option [value]="city.id">{{ city.name }}</option>
                     }
@@ -83,17 +81,20 @@ type BookingStep = 'search' | 'select-slot' | 'payment-instructions' | 'submit-r
                 </div>
                 <div>
                   <label for="specialtyId" class="block text-sm font-medium text-gray-700 mb-1">
-                    Spécialité <span class="text-red-500">*</span>
+                    Spécialité <span class="text-gray-400 font-normal">(optionnel)</span>
                   </label>
                   <select id="specialtyId" formControlName="specialtyId" class="input-field">
-                    <option value="">Choisir une spécialité</option>
+                    <option value="">Toutes les spécialités</option>
                     @for (s of specialties(); track s.id) {
                       <option [value]="s.id">{{ s.name }}</option>
                     }
                   </select>
                 </div>
               </div>
-              <button type="submit" [disabled]="!searchForm.value.specialtyId || searching()" class="btn-primary w-full">
+              <p class="text-xs text-gray-500">
+                Choisissez une ville pour afficher tous les praticiens disponibles, ou ajoutez une spécialité pour affiner.
+              </p>
+              <button type="submit" [disabled]="!canSearch() || searching()" class="btn-primary w-full">
                 @if (searching()) { Recherche en cours... } @else { Rechercher }
               </button>
             </form>
@@ -108,7 +109,7 @@ type BookingStep = 'search' | 'select-slot' | 'payment-instructions' | 'submit-r
                         d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0"/>
                 </svg>
                 <p class="font-medium">Aucun praticien disponible</p>
-                <p class="text-sm mt-1">Essayez une autre ville ou spécialité.</p>
+                <p class="text-sm mt-1">Essayez une autre ville{{ searchForm.value.specialtyId ? ' ou spécialité' : '' }}.</p>
               </div>
             } @else {
               <div class="space-y-3">
@@ -517,7 +518,7 @@ export class BookAppointmentComponent implements OnInit {
   ) {
     this.searchForm = this.fb.group({
       cityId: [''],
-      specialtyId: ['', Validators.required],
+      specialtyId: [''],
     });
     this.referenceForm = this.fb.group({
       paymentReference: ['', [Validators.required, Validators.minLength(4), Validators.maxLength(100)]],
@@ -532,14 +533,17 @@ export class BookAppointmentComponent implements OnInit {
 
   doSearch(): void {
     const { cityId, specialtyId } = this.searchForm.value;
-    if (!specialtyId) return;
+    if (!this.canSearch()) return;
     this.searching.set(true);
     this.searchDone.set(false);
     this.practitioners.set([]);
     this.selectedPractitioner.set(null);
     this.selectedDate.set('');
-    this.reasonControl.setValue(''); // réinitialise le motif si nouvelle recherche
-    this.practitionerService.search(cityId || null, specialtyId).subscribe({
+    this.reasonControl.setValue('');
+    this.practitionerService.search(
+      cityId ? Number(cityId) : null,
+      specialtyId ? Number(specialtyId) : null
+    ).subscribe({
       next: (data) => {
         this.practitioners.set(data);
         this.searching.set(false);
@@ -586,7 +590,7 @@ export class BookAppointmentComponent implements OnInit {
 
   loadSlotsForDate(date: string): void {
     const p = this.selectedPractitioner();
-    const specialtyId = this.searchForm.value.specialtyId;
+    const specialtyId = this.activeSpecialtyId();
     if (!p || !specialtyId || !date) return;
 
     this.loadingSlots.set(true);
@@ -638,10 +642,11 @@ export class BookAppointmentComponent implements OnInit {
 
     const appointmentDateTime = `${this.selectedDate()}T${slot.time}:00`;
 
-    // Spécialité choisie → consultationType (automatique, sans saisie patient)
-    const specialtyId = this.searchForm.value.specialtyId;
+    const specialtyId = this.activeSpecialtyId();
     const specialty = this.specialties().find(s => s.id == specialtyId);
-    const consultationType = specialty?.name || null;
+    const consultationType = specialty?.name
+      ?? this.selectedPractitioner()?.specialtyName?.split(', ')[0]
+      ?? null;
 
     this.appointmentService.createAppointment({
       practitionerId: p.userId,
@@ -693,6 +698,18 @@ export class BookAppointmentComponent implements OnInit {
   closeProfileModal(): void {
     this.profileModalVisible.set(false);
     this.profileModalUserId.set(null);
+  }
+
+  canSearch(): boolean {
+    const { cityId, specialtyId } = this.searchForm.value;
+    return !!(cityId || specialtyId);
+  }
+
+  /** Spécialité effective pour les créneaux : filtre recherche ou spécialité du résultat. */
+  activeSpecialtyId(): number | null {
+    const fromSearch = this.searchForm.value.specialtyId;
+    if (fromSearch) return Number(fromSearch);
+    return this.selectedPractitioner()?.specialtyId ?? null;
   }
 
   copyMerchantNumber(): void {

@@ -69,6 +69,7 @@ import { SyliSpinnerComponent } from '../../../shared/components/syli-spinner/sy
               </label>
               <p class="text-xs text-gray-500 mb-2">Le médecin qui a rédigé les comptes rendus à transférer</p>
               <select [(ngModel)]="form.sourcePractitionerId"
+                      (ngModelChange)="onSourcePractitionerChange($event)"
                       class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent">
                 <option [ngValue]="null">-- Sélectionner un praticien --</option>
                 @for (p of sourcePractitioners(); track p.userId) {
@@ -77,6 +78,22 @@ import { SyliSpinnerComponent } from '../../../shared/components/syli-spinner/sy
               </select>
               @if (sourcePractitioners().length === 0 && !loadingSource()) {
                 <p class="text-xs text-amber-600 mt-1">Vous n'avez aucun rendez-vous avec un praticien enregistré.</p>
+              }
+              @if (form.sourcePractitionerId && !loadingReportCount()) {
+                @if (sourceReportCount() === 0) {
+                  <div class="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+                    <strong>Aucun compte rendu disponible.</strong>
+                    Dr. {{ sourcePractitionerName() }} n'a rédigé aucun compte rendu pour vous.
+                    Vous ne pouvez pas demander de partage tant qu'aucun compte rendu n'existe.
+                  </div>
+                } @else {
+                  <p class="text-xs text-sky-700 mt-2">
+                    {{ sourceReportCount() }} compte{{ sourceReportCount() !== 1 ? 's' : '' }} rendu{{ sourceReportCount() !== 1 ? 's' : '' }}
+                    disponible{{ sourceReportCount() !== 1 ? 's' : '' }} chez ce praticien.
+                  </p>
+                }
+              } @else if (form.sourcePractitionerId && loadingReportCount()) {
+                <p class="text-xs text-gray-400 mt-2">Vérification des comptes rendus…</p>
               }
             </div>
 
@@ -114,7 +131,7 @@ import { SyliSpinnerComponent } from '../../../shared/components/syli-spinner/sy
             </div>
 
             <button (click)="submitTransfer()"
-                    [disabled]="submitting() || !form.sourcePractitionerId || !form.targetPractitionerId"
+                    [disabled]="submitting() || !form.sourcePractitionerId || !form.targetPractitionerId || sourceReportCount() === 0 || loadingReportCount()"
                     class="w-full btn-primary py-2.5 disabled:opacity-50 disabled:cursor-not-allowed">
               @if (submitting()) {
                 <app-syli-spinner size="xs" class="mr-2 inline-block align-middle" />
@@ -198,6 +215,8 @@ export class PatientTransfersComponent implements OnInit {
   patientAppointments = signal<AppointmentResponse[]>([]);
 
   loadingSource = signal(false);
+  loadingReportCount = signal(false);
+  sourceReportCount = signal<number | null>(null);
   loadingTransfers = signal(false);
   submitting = signal(false);
   canceling = signal<number | null>(null);
@@ -263,6 +282,24 @@ export class PatientTransfersComponent implements OnInit {
     });
   }
 
+  onSourcePractitionerChange(sourceId: number | null): void {
+    this.sourceReportCount.set(null);
+    this.error.set('');
+    if (!sourceId) return;
+
+    this.loadingReportCount.set(true);
+    this.transferService.getSourceReportCount(sourceId).subscribe({
+      next: ({ count }) => {
+        this.sourceReportCount.set(count);
+        this.loadingReportCount.set(false);
+      },
+      error: () => {
+        this.sourceReportCount.set(0);
+        this.loadingReportCount.set(false);
+      },
+    });
+  }
+
   submitTransfer(): void {
     this.error.set('');
     this.success.set('');
@@ -275,14 +312,16 @@ export class PatientTransfersComponent implements OnInit {
       patientNote: this.form.patientNote || undefined,
     }).subscribe({
       next: () => {
-        this.success.set('Demande envoyée ! Le praticien source sera notifié.');
+        this.success.set('Demande envoyée ! Dr. ' + (this.sourcePractitionerName().replace('Dr. ', ''))
+          + ' a été notifié par l\'application et par e-mail.');
         this.form = { sourcePractitionerId: null, targetPractitionerId: null, patientNote: '' };
+        this.sourceReportCount.set(null);
         this.submitting.set(false);
         this.transferService.getMyTransfers().subscribe(list => this.transfers.set(list));
         setTimeout(() => this.activeTab.set('history'), 1500);
       },
       error: (err) => {
-        this.error.set(err?.error?.message ?? 'Une erreur est survenue.');
+        this.error.set(err?.error?.detail ?? err?.error?.message ?? 'Une erreur est survenue.');
         this.submitting.set(false);
       },
     });
