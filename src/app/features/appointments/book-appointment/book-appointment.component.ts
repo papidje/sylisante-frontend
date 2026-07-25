@@ -11,13 +11,14 @@ import { AppointmentResponse, MERCHANT_TYPE_LABELS } from '../../../core/models/
 import { CityDto, SpecialtyDto } from '../../../core/models/city.model';
 import { todayLocalDateString, addDaysToLocalDate } from '../../../core/utils/date-utils';
 import { SyliSpinnerComponent } from '../../../shared/components/syli-spinner/syli-spinner.component';
+import { UserProfileModalComponent } from '../../../shared/components/user-profile-modal/user-profile-modal.component';
 
 type BookingStep = 'search' | 'select-slot' | 'payment-instructions' | 'submit-reference';
 
 @Component({
   selector: 'app-book-appointment',
   standalone: true,
-  imports: [  ReactiveFormsModule, CommonModule, SyliSpinnerComponent],
+  imports: [  ReactiveFormsModule, CommonModule, SyliSpinnerComponent, UserProfileModalComponent],
   template: `
     <div class="max-w-3xl mx-auto px-4 py-8">
       <div class="mb-8">
@@ -122,7 +123,11 @@ type BookingStep = 'search' | 'select-slot' | 'payment-instructions' | 'submit-r
                         </span>
                       </div>
                       <div class="flex-1 min-w-0">
-                        <p class="font-semibold text-gray-900">Dr. {{ p.firstName }} {{ p.lastName }}</p>
+                        <button type="button"
+                                (click)="openPractitionerProfile(p.userId, $event)"
+                                class="font-semibold text-gray-900 hover:text-primary-700 hover:underline text-left">
+                          Dr. {{ p.firstName }} {{ p.lastName }}
+                        </button>
                         <p class="text-sm text-primary-700 font-medium">{{ p.specialtyName }}</p>
                         <div class="flex flex-wrap items-center gap-3 mt-1">
                           @if (p.cityName) {
@@ -174,7 +179,11 @@ type BookingStep = 'search' | 'select-slot' | 'payment-instructions' | 'submit-r
               </span>
             </div>
             <div>
-              <p class="font-bold text-gray-900">Dr. {{ selectedPractitioner()!.firstName }} {{ selectedPractitioner()!.lastName }}</p>
+              <button type="button"
+                      (click)="openPractitionerProfile(selectedPractitioner()!.userId, $event)"
+                      class="font-bold text-gray-900 hover:text-primary-700 hover:underline text-left">
+                Dr. {{ selectedPractitioner()!.firstName }} {{ selectedPractitioner()!.lastName }}
+              </button>
               <p class="text-sm text-primary-700">{{ daySchedule()?.specialtyName }}</p>
               <p class="text-sm text-gray-500">
                 <strong>{{ daySchedule()?.consultationDurationMinutes }} min</strong> / consultation
@@ -407,6 +416,60 @@ type BookingStep = 'search' | 'select-slot' | 'payment-instructions' | 'submit-r
         </div>
       }
     </div>
+
+    <!-- Popup consignes de fin de réservation -->
+    @if (showInstructionsModal()) {
+      <div class="fixed inset-0 z-50 flex items-center justify-center p-4" (click)="closeInstructionsModal()">
+        <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg border border-slate-100"
+             (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+          <div class="px-6 pt-6 pb-4 border-b border-slate-100">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <h2 class="text-lg font-bold text-slate-900">Réservation enregistrée</h2>
+                <p class="text-sm text-slate-500 mt-1">
+                  Votre demande a été transmise au praticien pour validation du paiement.
+                </p>
+              </div>
+              <button type="button" (click)="closeInstructionsModal()"
+                      class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                      aria-label="Fermer">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="px-6 py-5 space-y-4">
+            @if (selectedPractitioner()?.appointmentInstructions) {
+              <div class="bg-sky-50 border border-sky-200 rounded-xl p-4">
+                <p class="text-sm font-semibold text-sky-900 mb-2 flex items-center gap-2">
+                  <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                  Consignes du Dr. {{ selectedPractitioner()!.lastName }}
+                </p>
+                <p class="text-sm text-sky-800 whitespace-pre-wrap">{{ selectedPractitioner()!.appointmentInstructions }}</p>
+              </div>
+            } @else {
+              <p class="text-sm text-slate-600">
+                Vous recevrez une notification dès que le praticien aura confirmé votre rendez-vous.
+              </p>
+            }
+            <button type="button" (click)="closeInstructionsModal()" class="btn-primary w-full">
+              Voir mes rendez-vous
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+
+    <app-user-profile-modal
+      [visible]="profileModalVisible()"
+      mode="practitioner"
+      [userId]="profileModalUserId()"
+      (closed)="closeProfileModal()" />
   `,
 })
 export class BookAppointmentComponent implements OnInit {
@@ -427,6 +490,9 @@ export class BookAppointmentComponent implements OnInit {
   submittingReference = signal(false);
   errorMessage = signal('');
   createdAppointmentId = signal<number | null>(null);
+  showInstructionsModal = signal(false);
+  profileModalVisible = signal(false);
+  profileModalUserId = signal<number | null>(null);
 
   readonly today = todayLocalDateString();
   readonly maxDate = addDaysToLocalDate(todayLocalDateString(), 90);
@@ -602,12 +668,31 @@ export class BookAppointmentComponent implements OnInit {
     this.appointmentService.submitPaymentReference(id, {
       paymentReference: this.referenceForm.value.paymentReference,
     }).subscribe({
-      next: () => this.router.navigate(['/appointments']),
+      next: () => {
+        this.submittingReference.set(false);
+        this.showInstructionsModal.set(true);
+      },
       error: (err: HttpErrorResponse) => {
         this.submittingReference.set(false);
         this.errorMessage.set(err.error?.detail || 'Erreur lors de l\'envoi de la référence.');
       },
     });
+  }
+
+  closeInstructionsModal(): void {
+    this.showInstructionsModal.set(false);
+    this.router.navigate(['/appointments']);
+  }
+
+  openPractitionerProfile(userId: number, event: Event): void {
+    event.stopPropagation();
+    this.profileModalUserId.set(userId);
+    this.profileModalVisible.set(true);
+  }
+
+  closeProfileModal(): void {
+    this.profileModalVisible.set(false);
+    this.profileModalUserId.set(null);
   }
 
   copyMerchantNumber(): void {

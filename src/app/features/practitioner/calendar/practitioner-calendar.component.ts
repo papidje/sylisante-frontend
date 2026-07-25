@@ -6,6 +6,7 @@ import { AppointmentService } from '../../../core/services/appointment.service';
 import { AppointmentResponse, AppointmentStatus, APPOINTMENT_STATUS_LABELS } from '../../../core/models/appointment.model';
 import { formatLocalDateTime, parseLocalDateTime } from '../../../core/utils/date-utils';
 import { SyliSpinnerComponent } from '../../../shared/components/syli-spinner/syli-spinner.component';
+import { UserProfileModalComponent } from '../../../shared/components/user-profile-modal/user-profile-modal.component';
 
 type CalendarView = 'day' | 'week' | 'month';
 
@@ -19,7 +20,7 @@ interface CalendarDay {
 @Component({
   selector: 'app-practitioner-calendar',
   standalone: true,
-  imports: [  CommonModule, RouterLink, SyliSpinnerComponent],
+  imports: [  CommonModule, RouterLink, SyliSpinnerComponent, UserProfileModalComponent],
   template: `
     <div class="max-w-7xl mx-auto px-4 py-6">
 
@@ -248,9 +249,11 @@ interface CalendarDay {
             <div class="rounded-t-2xl px-6 py-4 flex items-center justify-between"
                  [class]="modalHeaderBg(modalAppointment()!.status)">
               <div>
-                <p class="font-bold text-white text-lg">
+                <button type="button"
+                        (click)="openPatientProfile(modalAppointment()!.patientId)"
+                        class="font-bold text-white text-lg hover:underline text-left">
                   {{ modalAppointment()!.patientFirstName }} {{ modalAppointment()!.patientLastName }}
-                </p>
+                </button>
                 <p class="text-white/80 text-sm">{{ formatLocalDateTime(modalAppointment()!.appointmentDateTime) }}</p>
               </div>
               <button (click)="closeModal()"
@@ -318,7 +321,11 @@ interface CalendarDay {
             </div>
 
             <!-- Actions -->
-            <div class="px-6 pb-5 flex gap-3">
+            <div class="px-6 pb-5 flex flex-wrap gap-3">
+              <button type="button" (click)="openPatientProfile(modalAppointment()!.patientId)"
+                      class="btn-secondary flex-1 text-sm min-w-[140px]">
+                Fiche patient
+              </button>
               @if (modalAppointment()!.status === 'CONFIRMED') {
                 <button (click)="goToReport(modalAppointment()!.id)"
                         class="btn-secondary flex-1 text-sm">
@@ -337,6 +344,12 @@ interface CalendarDay {
         </div>
       }
 
+      <app-user-profile-modal
+        [visible]="profileModalVisible()"
+        mode="patient"
+        [userId]="profileModalUserId()"
+        (closed)="closeProfileModal()" />
+
     </div>
   `,
 })
@@ -347,6 +360,8 @@ export class PractitionerCalendarComponent implements OnInit {
   loading        = signal(true);
   modalAppointment = signal<AppointmentResponse | null>(null);
   actionLoading  = signal(false);
+  profileModalVisible = signal(false);
+  profileModalUserId = signal<number | null>(null);
 
   readonly views = [
     { id: 'day'   as CalendarView, label: 'Jour'    },
@@ -601,6 +616,16 @@ export class PractitionerCalendarComponent implements OnInit {
 
   cancellationReasonLabel(status: AppointmentStatus): string {
     return status === 'REFUSED' ? 'Motif du refus' : 'Motif de l\'annulation';
+  }
+
+  openPatientProfile(patientId: number): void {
+    this.profileModalUserId.set(patientId);
+    this.profileModalVisible.set(true);
+  }
+
+  closeProfileModal(): void {
+    this.profileModalVisible.set(false);
+    this.profileModalUserId.set(null);
   }
 
   getStatusBadgeClass(status: AppointmentStatus): string {

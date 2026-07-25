@@ -5,11 +5,12 @@ import { AdminService } from '../../../core/services/admin.service';
 import { AdminUserDto, Role, UserStatus, USER_STATUS_LABELS, ROLE_LABELS } from '../../../core/models/user.model';
 import { formatLocalDate } from '../../../core/utils/date-utils';
 import { SyliSpinnerComponent } from '../../../shared/components/syli-spinner/syli-spinner.component';
+import { UserProfileModalComponent } from '../../../shared/components/user-profile-modal/user-profile-modal.component';
 
 @Component({
   selector: 'app-user-moderation',
   standalone: true,
-  imports: [  CommonModule, FormsModule, SyliSpinnerComponent],
+  imports: [  CommonModule, FormsModule, SyliSpinnerComponent, UserProfileModalComponent],
   template: `
     <div class="max-w-6xl mx-auto px-4 py-8">
       <div class="mb-8">
@@ -70,12 +71,13 @@ import { SyliSpinnerComponent } from '../../../shared/components/syli-spinner/sy
                 @for (user of filteredUsers(); track user.id) {
                   <tr class="hover:bg-gray-50">
                     <td class="px-6 py-4">
-                      <div>
-                        <p class="text-sm font-medium text-gray-900">
+                      <button type="button" (click)="openUserProfile(user.id)"
+                              class="text-left hover:text-primary-700 group">
+                        <p class="text-sm font-medium text-gray-900 group-hover:underline">
                           {{ user.firstName }} {{ user.lastName }}
                         </p>
                         <p class="text-xs text-gray-500">{{ user.email }}</p>
-                      </div>
+                      </button>
                     </td>
                     <td class="px-6 py-4">
                       <span class="text-sm text-gray-700">{{ getRoleLabel(user.role) }}</span>
@@ -90,6 +92,10 @@ import { SyliSpinnerComponent } from '../../../shared/components/syli-spinner/sy
                     </td>
                     <td class="px-6 py-4 text-right">
                       <div class="flex justify-end gap-2">
+                        <button type="button" (click)="openUserProfile(user.id)"
+                                class="text-xs px-3 py-1 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50">
+                          Profil
+                        </button>
                         @if (user.status === 'ACTIVE') {
                           <button (click)="updateStatus(user, 'SUSPENDED')"
                                   [disabled]="actionLoading() === user.id"
@@ -124,6 +130,12 @@ import { SyliSpinnerComponent } from '../../../shared/components/syli-spinner/sy
         </div>
       }
     </div>
+
+    <app-user-profile-modal
+      [visible]="profileModalVisible()"
+      mode="admin"
+      [userId]="profileModalUserId()"
+      (closed)="closeProfileModal()" />
   `,
 })
 export class UserModerationComponent implements OnInit {
@@ -132,6 +144,8 @@ export class UserModerationComponent implements OnInit {
   actionLoading = signal<number | null>(null);
   filterRole = signal<'ALL' | Role>('ALL');
   searchTerm = '';
+  profileModalVisible = signal(false);
+  profileModalUserId = signal<number | null>(null);
 
   constructor(private adminService: AdminService) {}
 
@@ -200,5 +214,15 @@ export class UserModerationComponent implements OnInit {
 
   formatDate(dateStr: string): string {
     return formatLocalDate(dateStr);
+  }
+
+  openUserProfile(userId: number): void {
+    this.profileModalUserId.set(userId);
+    this.profileModalVisible.set(true);
+  }
+
+  closeProfileModal(): void {
+    this.profileModalVisible.set(false);
+    this.profileModalUserId.set(null);
   }
 }

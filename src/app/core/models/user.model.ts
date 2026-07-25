@@ -1,3 +1,6 @@
+import { PractitionerProfileDto } from './practitioner.model';
+import { UserProfileDto } from './user-profile.model';
+
 export type Role = 'ROLE_PATIENT' | 'ROLE_PRATICIEN' | 'ROLE_ADMIN';
 export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
 
@@ -20,6 +23,11 @@ export interface AdminUserDto {
   role: Role;
   status: UserStatus;
   createdAt: string;
+}
+
+export interface AdminUserDetailDto {
+  profile: UserProfileDto;
+  practitionerProfile: PractitionerProfileDto | null;
 }
 
 export interface RegisterRequest {

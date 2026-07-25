@@ -186,6 +186,24 @@ import { SyliSpinnerComponent } from '../../../shared/components/syli-spinner/sy
               </div>
             </div>
 
+            <!-- Section Consignes de rendez-vous -->
+            <div class="card">
+              <h2 class="text-base font-semibold text-gray-900 mb-1 flex items-center gap-2">
+                <svg class="w-4 h-4 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                Consignes de rendez-vous
+              </h2>
+              <p class="text-xs text-gray-400 mb-3">
+                Informations transmises au patient à la fin de la réservation et lors de la confirmation
+                (accès au cabinet, repères, documents à apporter…).
+              </p>
+              <textarea id="appointmentInstructions" formControlName="appointmentInstructions" rows="5"
+                        class="input-field resize-y"
+                        placeholder="Ex : Cabinet au 2e étage, entrée par la rue X. Présentez-vous 10 min avant avec votre carnet de santé…"></textarea>
+            </div>
+
             <!-- Section Mobile Money -->
             <div class="card">
               <h2 class="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
@@ -312,6 +330,7 @@ export class PractitionerProfileComponent implements OnInit {
       address: ['', Validators.maxLength(300)],
       speciality: ['', Validators.maxLength(100)],
       bio: [''],
+      appointmentInstructions: [''],
       consultationFee: [null],
       merchantNumber: [''],
       merchantType: [''],
@@ -344,6 +363,7 @@ export class PractitionerProfileComponent implements OnInit {
         address: profile.address ?? '',
         speciality: profile.speciality ?? '',
         bio: profile.bio ?? '',
+        appointmentInstructions: profile.appointmentInstructions ?? '',
         consultationFee: profile.consultationFee,
         merchantNumber: profile.merchantNumber ?? '',
         merchantType: profile.merchantType ?? '',
@@ -409,6 +429,7 @@ export class PractitionerProfileComponent implements OnInit {
       ...(v.address ? { address: v.address } : {}),
       ...(v.speciality !== null && v.speciality !== undefined ? { speciality: v.speciality } : {}),
       ...(v.bio ? { bio: v.bio } : {}),
+      appointmentInstructions: v.appointmentInstructions ?? '',
       ...(v.consultationFee ? { consultationFee: v.consultationFee } : {}),
       ...(v.merchantNumber ? { merchantNumber: v.merchantNumber } : {}),
       ...(v.merchantType ? { merchantType: v.merchantType } : {}),

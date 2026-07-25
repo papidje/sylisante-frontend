@@ -18,6 +18,7 @@ export interface PractitionerProfileDto {
   address: string | null;
   speciality: string | null;
   bio: string | null;
+  appointmentInstructions: string | null;
   consultationFee: number | null;
   merchantNumber: string | null;
   merchantType: MerchantType | null;
@@ -32,6 +33,7 @@ export interface PractitionerSearchResult {
   cityName: string | null;
   address: string | null;
   bio: string | null;
+  appointmentInstructions: string | null;
   specialtyName: string | null;
   consultationDurationMinutes: number;
   merchantNumber: string | null;
@@ -42,6 +44,7 @@ export interface UpdatePractitionerProfileRequest {
   cityId?: number;
   address?: string;
   bio?: string;
+  appointmentInstructions?: string;
   consultationFee?: number;
   merchantNumber?: string;
   merchantType?: MerchantType;

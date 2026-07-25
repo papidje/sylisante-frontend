@@ -8,13 +8,14 @@ import { AppointmentResponse, AppointmentStatus, APPOINTMENT_STATUS_LABELS } fro
 import { formatLocalDateTime } from '../../../core/utils/date-utils';
 import { SyliSpinnerComponent } from '../../../shared/components/syli-spinner/syli-spinner.component';
 import { AppointmentActionModalComponent, AppointmentActionMode } from '../../../shared/components/appointment-action-modal/appointment-action-modal.component';
+import { UserProfileModalComponent, ProfileViewMode } from '../../../shared/components/user-profile-modal/user-profile-modal.component';
 
 type ListTab = 'upcoming' | 'past' | 'cancelled';
 
 @Component({
   selector: 'app-appointment-list',
   standalone: true,
-  imports: [RouterLink, CommonModule, SyliSpinnerComponent, AppointmentActionModalComponent],
+  imports: [RouterLink, CommonModule, SyliSpinnerComponent, AppointmentActionModalComponent, UserProfileModalComponent],
   template: `
     <div class="max-w-5xl mx-auto px-4 py-8">
       <div class="flex items-center justify-between mb-6">
@@ -108,9 +109,17 @@ type ListTab = 'upcoming' | 'past' | 'cancelled';
                     <div>
                       <p class="font-semibold text-gray-900">
                         @if (authService.isPatient()) {
-                          Dr. {{ appt.practitionerFirstName }} {{ appt.practitionerLastName }}
+                          <button type="button"
+                                  (click)="openProfile('practitioner', appt.practitionerId)"
+                                  class="hover:text-primary-700 hover:underline">
+                            Dr. {{ appt.practitionerFirstName }} {{ appt.practitionerLastName }}
+                          </button>
                         } @else {
-                          {{ appt.patientFirstName }} {{ appt.patientLastName }}
+                          <button type="button"
+                                  (click)="openProfile('patient', appt.patientId)"
+                                  class="hover:text-primary-700 hover:underline">
+                            {{ appt.patientFirstName }} {{ appt.patientLastName }}
+                          </button>
                         }
                       </p>
                       <div class="flex items-center gap-2 flex-wrap mt-0.5">
@@ -237,6 +246,12 @@ type ListTab = 'upcoming' | 'past' | 'cancelled';
         [loading]="actionLoading() !== null"
         (closed)="closeActionModal()"
         (confirmed)="confirmAction($event)" />
+
+      <app-user-profile-modal
+        [visible]="profileModalVisible()"
+        [mode]="profileModalMode()"
+        [userId]="profileModalUserId()"
+        (closed)="closeProfileModal()" />
     </div>
   `,
 })
@@ -249,6 +264,9 @@ export class AppointmentListComponent implements OnInit {
   activeTab     = signal<ListTab>('upcoming');
   actionModalVisible = signal(false);
   actionModalMode    = signal<AppointmentActionMode>('cancel');
+  profileModalVisible = signal(false);
+  profileModalMode = signal<ProfileViewMode>('practitioner');
+  profileModalUserId = signal<number | null>(null);
   private pendingActionId: number | null = null;
 
   constructor(
@@ -359,6 +377,17 @@ export class AppointmentListComponent implements OnInit {
 
   cancellationReasonLabel(status: AppointmentStatus): string {
     return status === 'REFUSED' ? 'Motif du refus' : 'Motif de l\'annulation';
+  }
+
+  openProfile(mode: ProfileViewMode, userId: number): void {
+    this.profileModalMode.set(mode);
+    this.profileModalUserId.set(userId);
+    this.profileModalVisible.set(true);
+  }
+
+  closeProfileModal(): void {
+    this.profileModalVisible.set(false);
+    this.profileModalUserId.set(null);
   }
 
   formatDate(dateStr: string): string {

@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { AdminUserDto, UserStatus } from '../models/user.model';
+import { AdminUserDto, AdminUserDetailDto, UserStatus } from '../models/user.model';
 import { CityDto, SpecialtyDto } from '../models/city.model';
 import { PlanningAlertDto } from '../models/planning-alert.model';
 
@@ -18,6 +18,9 @@ export class AdminService {
   }
   getPractitioners(): Observable<AdminUserDto[]> {
     return this.http.get<AdminUserDto[]>('/api/admin/users/practitioners');
+  }
+  getUserById(userId: number): Observable<AdminUserDetailDto> {
+    return this.http.get<AdminUserDetailDto>(`/api/admin/users/${userId}`);
   }
   updateUserStatus(userId: number, status: UserStatus): Observable<AdminUserDto> {
     return this.http.patch<AdminUserDto>(`/api/admin/users/${userId}/status`, { status });

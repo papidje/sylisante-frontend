@@ -35,3 +35,16 @@ export const GENDER_LABELS: Record<string, string> = {
   FEMALE: 'Femme',
   OTHER: 'Autre',
 };
+
+/** Fiche patient consultable par un praticien. */
+export interface PatientProfileViewDto {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string | null;
+  address: string | null;
+  birthDate: string | null;
+  gender: string | null;
+  description: string | null;
+}
