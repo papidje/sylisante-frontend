@@ -88,6 +88,13 @@ export const ROLE_LABELS: Record<Role, string> = {
   ROLE_ADMIN: 'Administrateur',
 };
 
+export function canSendSupportMessage(role: Role | undefined, status: UserStatus | undefined): boolean {
+  if (!role || role === 'ROLE_ADMIN') return false;
+  if (role === 'ROLE_PRATICIEN') return true;
+  if (role === 'ROLE_PATIENT') return status === 'SUSPENDED';
+  return false;
+}
+
 export function isAccountRestricted(status: UserStatus | undefined): boolean {
   return status === 'SUSPENDED' || status === 'SUBSCRIPTION_EXPIRED';
 }

@@ -1,9 +1,11 @@
 import {
+  AfterViewInit,
   Component,
   ElementRef,
   EventEmitter,
   Input,
   OnChanges,
+  OnDestroy,
   Output,
   SimpleChanges,
   ViewChild,
@@ -75,7 +77,7 @@ import { SyliSpinnerComponent } from '../syli-spinner/syli-spinner.component';
     </div>
   `,
 })
-export class SupportConversationPanelComponent implements OnChanges {
+export class SupportConversationPanelComponent implements OnChanges, AfterViewInit, OnDestroy {
   @Input() messages: SupportMessageDto[] = [];
   @Input() loading = false;
   @Input() sending = false;
@@ -91,12 +93,30 @@ export class SupportConversationPanelComponent implements OnChanges {
   draft = '';
   sortedMessages: SupportMessageDto[] = [];
 
+  private stickToBottom = true;
+  private scrollListener?: () => void;
+  private readonly scrollThreshold = 80;
+
+  ngAfterViewInit(): void {
+    this.attachScrollListener();
+  }
+
+  ngOnDestroy(): void {
+    this.detachScrollListener();
+  }
+
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['messages']) {
+      const previous = (changes['messages'].previousValue as SupportMessageDto[] | undefined) ?? [];
+      const isFirstLoad = previous.length === 0 && this.messages.length > 0;
+
       this.sortedMessages = [...this.messages].sort(
         (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
       );
-      this.scrollToBottom();
+
+      if (isFirstLoad || this.stickToBottom) {
+        this.scrollToBottom();
+      }
     }
   }
 
@@ -107,6 +127,7 @@ export class SupportConversationPanelComponent implements OnChanges {
   submit(): void {
     const text = this.draft.trim();
     if (!text || this.sending) return;
+    this.stickToBottom = true;
     this.send.emit(text);
     this.draft = '';
   }
@@ -128,11 +149,34 @@ export class SupportConversationPanelComponent implements OnChanges {
     }
   }
 
+  private attachScrollListener(): void {
+    const el = this.scrollContainer?.nativeElement;
+    if (!el || this.scrollListener) return;
+
+    this.scrollListener = () => this.updateStickToBottom();
+    el.addEventListener('scroll', this.scrollListener, { passive: true });
+  }
+
+  private detachScrollListener(): void {
+    const el = this.scrollContainer?.nativeElement;
+    if (el && this.scrollListener) {
+      el.removeEventListener('scroll', this.scrollListener);
+    }
+    this.scrollListener = undefined;
+  }
+
+  private updateStickToBottom(): void {
+    const el = this.scrollContainer?.nativeElement;
+    if (!el) return;
+    this.stickToBottom = el.scrollHeight - el.scrollTop - el.clientHeight <= this.scrollThreshold;
+  }
+
   private scrollToBottom(): void {
     setTimeout(() => {
       const el = this.scrollContainer?.nativeElement;
       if (el) {
         el.scrollTop = el.scrollHeight;
+        this.stickToBottom = true;
       }
     }, 0);
   }

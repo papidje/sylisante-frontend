@@ -55,14 +55,34 @@ export const NOTIFICATION_ICONS: Record<NotificationType, string> = {
   PRACTITIONER_PENDING_VALIDATION: '⏳',
 };
 
+const USER_MESSAGING_NOTIFICATION_TYPES: NotificationType[] = [
+  'ADMIN_SUPPORT_REQUEST',
+  'ACCOUNT_ACTIVATED',
+  'ACCOUNT_SUSPENDED',
+  'SUBSCRIPTION_EXPIRED',
+  'SUBSCRIPTION_EXPIRING_SOON',
+];
+
 /** Route cible pour la navigation au clic sur la notification. */
 export function notificationRoute(n: NotificationDto, isAdmin: boolean): string | null {
-  if (n.type === 'ADMIN_SUPPORT_REQUEST' || n.referenceType === 'SUPPORT_CONVERSATION') {
+  if (n.referenceType === 'SUPPORT_CONVERSATION') {
     if (isAdmin && n.referenceId) {
       return `/admin/support-requests/${n.referenceId}`;
     }
     return '/contact-admin';
   }
+
+  if (n.type === 'ADMIN_SUPPORT_REQUEST') {
+    if (isAdmin && n.referenceId) {
+      return `/admin/support-requests/${n.referenceId}`;
+    }
+    return '/contact-admin';
+  }
+
+  if (!isAdmin && USER_MESSAGING_NOTIFICATION_TYPES.includes(n.type)) {
+    return '/contact-admin';
+  }
+
   if (!n.referenceId) return null;
   if (n.referenceType === 'APPOINTMENT') return '/appointments';
   if (n.referenceType === 'TRANSFER') {

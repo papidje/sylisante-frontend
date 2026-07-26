@@ -9,6 +9,18 @@ export interface SupportMessageDto {
   createdAt: string;
 }
 
+export interface SupportAccessDto {
+  canSend: boolean;
+  canRead: boolean;
+  hasConversation: boolean;
+}
+
+export interface SupportConversationViewDto {
+  messages: SupportMessageDto[];
+  canSend: boolean;
+  readOnly: boolean;
+}
+
 export interface SupportConversationSummaryDto {
   userId: number;
   userEmail: string;

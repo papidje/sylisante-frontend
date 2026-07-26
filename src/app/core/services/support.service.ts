@@ -1,14 +1,22 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { SupportMessageDto } from '../models/support.model';
+import {
+  SupportAccessDto,
+  SupportConversationViewDto,
+  SupportMessageDto,
+} from '../models/support.model';
 
 @Injectable({ providedIn: 'root' })
 export class SupportService {
   constructor(private http: HttpClient) {}
 
-  getMyMessages(): Observable<SupportMessageDto[]> {
-    return this.http.get<SupportMessageDto[]>('/api/support/messages');
+  getAccess(): Observable<SupportAccessDto> {
+    return this.http.get<SupportAccessDto>('/api/support/access');
+  }
+
+  getMyConversation(): Observable<SupportConversationViewDto> {
+    return this.http.get<SupportConversationViewDto>('/api/support/messages');
   }
 
   sendMessage(message: string): Observable<SupportMessageDto> {

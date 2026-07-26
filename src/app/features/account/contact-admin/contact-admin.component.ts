@@ -15,8 +15,14 @@ const POLL_INTERVAL_MS = 10_000;
     <div class="max-w-2xl mx-auto px-4 py-8 flex flex-col" style="height: calc(100vh - 4rem);">
       <div class="mb-4 flex items-center justify-between gap-4 flex-shrink-0">
         <div>
-          <h1 class="text-2xl font-bold text-gray-900">Contacter l'administrateur</h1>
-          <p class="text-gray-500 mt-1 text-sm">Échangez avec l'équipe SyliSanté</p>
+          <h1 class="text-2xl font-bold text-gray-900">Contacter l'admin</h1>
+          <p class="text-gray-500 mt-1 text-sm">
+            @if (readOnly()) {
+              Historique de vos échanges avec l'équipe SyliSanté
+            } @else {
+              Échangez avec l'équipe SyliSanté
+            }
+          </p>
         </div>
         @if (authService.isAccountRestricted()) {
           <a routerLink="/account-restricted"
@@ -26,12 +32,19 @@ const POLL_INTERVAL_MS = 10_000;
         }
       </div>
 
+      @if (readOnly()) {
+        <div class="mb-4 flex-shrink-0 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+          Consultation de l'historique uniquement. L'envoi de nouveaux messages n'est pas disponible pour votre compte.
+        </div>
+      }
+
       <div class="card flex-1 min-h-0 flex flex-col p-4">
         <app-support-conversation-panel
           class="flex-1 min-h-0 block"
           [messages]="messages()"
           [loading]="loading()"
           [sending]="sending()"
+          [showComposer]="canSend()"
           [errorMessage]="errorMessage()"
           ownSenderType="USER"
           (send)="onSend($event)" />
@@ -41,6 +54,8 @@ const POLL_INTERVAL_MS = 10_000;
 })
 export class ContactAdminComponent implements OnInit, OnDestroy {
   messages = signal<SupportMessageDto[]>([]);
+  canSend = signal(true);
+  readOnly = signal(false);
   loading = signal(true);
   sending = signal(false);
   errorMessage = signal('');
@@ -52,19 +67,21 @@ export class ContactAdminComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.loadMessages();
-    this.pollTimer = setInterval(() => this.loadMessages(true), POLL_INTERVAL_MS);
+    this.loadConversation();
+    this.pollTimer = setInterval(() => this.loadConversation(true), POLL_INTERVAL_MS);
   }
 
   ngOnDestroy(): void {
     if (this.pollTimer) clearInterval(this.pollTimer);
   }
 
-  loadMessages(silent = false): void {
+  loadConversation(silent = false): void {
     if (!silent) this.loading.set(true);
-    this.supportService.getMyMessages().subscribe({
-      next: (msgs) => {
-        this.messages.set(msgs);
+    this.supportService.getMyConversation().subscribe({
+      next: (view) => {
+        this.messages.set(view.messages);
+        this.canSend.set(view.canSend);
+        this.readOnly.set(view.readOnly);
         if (!silent) this.loading.set(false);
       },
       error: () => {
@@ -79,7 +96,7 @@ export class ContactAdminComponent implements OnInit, OnDestroy {
     this.supportService.sendMessage(text).subscribe({
       next: () => {
         this.sending.set(false);
-        this.loadMessages(true);
+        this.loadConversation(true);
       },
       error: (err) => {
         this.errorMessage.set(err.error?.detail || 'Erreur lors de l\'envoi.');

@@ -3,7 +3,9 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { PlanningAlertService } from '../../../core/services/planning-alert.service';
 import { ReportTransferService } from '../../../core/services/report-transfer.service';
+import { SupportService } from '../../../core/services/support.service';
 import { NotificationBellComponent } from '../notification-bell/notification-bell.component';
+import { canSendSupportMessage } from '../../../core/models/user.model';
 
 @Component({
   selector: 'app-navbar',
@@ -48,6 +50,10 @@ import { NotificationBellComponent } from '../notification-bell/notification-bel
                    class="nav-link">Transferts</a>
                 <a routerLink="/patient-profile" routerLinkActive="nav-active"
                    class="nav-link">Mon profil</a>
+                @if (showSupportLink()) {
+                  <a routerLink="/contact-admin" routerLinkActive="nav-active"
+                     class="nav-link">Mes demandes</a>
+                }
               }
 
               @if (authService.isPractitioner()) {
@@ -89,6 +95,8 @@ import { NotificationBellComponent } from '../notification-bell/notification-bel
                 }
                 <a routerLink="/profile" routerLinkActive="nav-active"
                    class="nav-link">Mon profil</a>
+                <a routerLink="/contact-admin" routerLinkActive="nav-active"
+                   class="nav-link">Mes demandes</a>
               }
 
               @if (authService.isAdmin()) {
@@ -109,7 +117,7 @@ import { NotificationBellComponent } from '../notification-bell/notification-bel
                 <a routerLink="/account-restricted" routerLinkActive="nav-active"
                    class="nav-link">Mon compte</a>
                 <a routerLink="/contact-admin" routerLinkActive="nav-active"
-                   class="nav-link">Contacter l'admin</a>
+                   class="nav-link">Mes demandes</a>
               }
 
             </div>
@@ -179,20 +187,41 @@ import { NotificationBellComponent } from '../notification-bell/notification-bel
 export class NavbarComponent implements OnInit {
   alertCount = signal(0);
   transferPendingCount = signal(0);
+  showSupportLink = signal(false);
 
   constructor(
     public authService: AuthService,
     private planningAlertService: PlanningAlertService,
-    private reportTransferService: ReportTransferService
+    private reportTransferService: ReportTransferService,
+    private supportService: SupportService,
   ) {}
 
   ngOnInit(): void {
+    this.loadSupportNavVisibility();
+
     if (this.authService.isPractitioner()) {
       this.planningAlertService.getUnresolvedCount().subscribe(res => {
         this.alertCount.set(res.unresolvedCount);
       });
       this.reportTransferService.getPendingCount().subscribe(res => {
         this.transferPendingCount.set(res.pendingCount);
+      });
+    }
+  }
+
+  private loadSupportNavVisibility(): void {
+    const user = this.authService.currentUser();
+    if (!user || user.role === 'ROLE_ADMIN') return;
+
+    if (canSendSupportMessage(user.role, user.status)) {
+      this.showSupportLink.set(true);
+      return;
+    }
+
+    if (user.role === 'ROLE_PATIENT') {
+      this.supportService.getAccess().subscribe({
+        next: (access) => this.showSupportLink.set(access.canSend || access.hasConversation),
+        error: () => this.showSupportLink.set(false),
       });
     }
   }

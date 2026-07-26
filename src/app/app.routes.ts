@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { authGuard, guestGuard } from './core/guards/auth.guard';
 import { roleGuard } from './core/guards/role.guard';
 import { accountAccessGuard } from './core/guards/account-access.guard';
+import { contactAdminGuard } from './core/guards/contact-admin.guard';
 import { practitionerOperationalGuard } from './core/guards/practitioner-operational.guard';
 
 export const routes: Routes = [
@@ -46,7 +47,7 @@ export const routes: Routes = [
   // Conversation avec l'administrateur
   {
     path: 'contact-admin',
-    canActivate: [authGuard, accountAccessGuard],
+    canActivate: [authGuard, contactAdminGuard],
     loadComponent: () =>
       import('./features/account/contact-admin/contact-admin.component').then(
         m => m.ContactAdminComponent
