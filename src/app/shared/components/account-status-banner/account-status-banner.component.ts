@@ -1,12 +1,12 @@
 import { Component, signal } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { getAccountRestrictionMessage } from '../../../core/models/user.model';
-import { ContactAdminModalComponent } from '../../../shared/components/contact-admin-modal/contact-admin-modal.component';
 
 @Component({
   selector: 'app-account-status-banner',
   standalone: true,
-  imports: [ContactAdminModalComponent],
+  imports: [RouterLink],
   template: `
     @if (authService.needsAccountDisclaimer()) {
       <div class="border-b"
@@ -29,36 +29,26 @@ import { ContactAdminModalComponent } from '../../../shared/components/contact-a
               {{ message() }}
             </p>
           </div>
-          <button type="button" (click)="openContact()"
-                  class="text-sm font-medium px-4 py-1.5 rounded-lg border whitespace-nowrap transition-colors"
-                  [class.border-amber-300]="authService.isPendingValidation()"
-                  [class.text-amber-800]="authService.isPendingValidation()"
-                  [class.hover:bg-amber-100]="authService.isPendingValidation()"
-                  [class.border-red-300]="!authService.isPendingValidation()"
-                  [class.text-red-800]="!authService.isPendingValidation()"
-                  [class.hover:bg-red-100]="!authService.isPendingValidation()">
+          <a routerLink="/contact-admin"
+             class="text-sm font-medium px-4 py-1.5 rounded-lg border whitespace-nowrap transition-colors text-center"
+             [class.border-amber-300]="authService.isPendingValidation()"
+             [class.text-amber-800]="authService.isPendingValidation()"
+             [class.hover:bg-amber-100]="authService.isPendingValidation()"
+             [class.border-red-300]="!authService.isPendingValidation()"
+             [class.text-red-800]="!authService.isPendingValidation()"
+             [class.hover:bg-red-100]="!authService.isPendingValidation()">
             Contacter l'administrateur
-          </button>
+          </a>
         </div>
       </div>
     }
-
-    <app-contact-admin-modal
-      [visible]="contactVisible()"
-      (closed)="contactVisible.set(false)" />
   `,
 })
 export class AccountStatusBannerComponent {
-  contactVisible = signal(false);
-
   constructor(public authService: AuthService) {}
 
   message(): string {
     const user = this.authService.currentUser();
     return getAccountRestrictionMessage(user?.status, user?.role);
-  }
-
-  openContact(): void {
-    this.contactVisible.set(true);
   }
 }

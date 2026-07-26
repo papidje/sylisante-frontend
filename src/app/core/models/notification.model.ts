@@ -13,7 +13,9 @@ export type NotificationType =
   | 'ACCOUNT_SUSPENDED'
   | 'ACCOUNT_ACTIVATED'
   | 'SUBSCRIPTION_EXPIRED'
-  | 'SUBSCRIPTION_EXPIRING_SOON';
+  | 'SUBSCRIPTION_EXPIRING_SOON'
+  | 'ADMIN_SUPPORT_REQUEST'
+  | 'PRACTITIONER_PENDING_VALIDATION';
 
 export interface NotificationDto {
   id: number;
@@ -49,10 +51,18 @@ export const NOTIFICATION_ICONS: Record<NotificationType, string> = {
   ACCOUNT_ACTIVATED:      '🎉',
   SUBSCRIPTION_EXPIRED:   '⏳',
   SUBSCRIPTION_EXPIRING_SOON: '⚠️',
+  ADMIN_SUPPORT_REQUEST:  '💬',
+  PRACTITIONER_PENDING_VALIDATION: '⏳',
 };
 
 /** Route cible pour la navigation au clic sur la notification. */
-export function notificationRoute(n: NotificationDto): string | null {
+export function notificationRoute(n: NotificationDto, isAdmin: boolean): string | null {
+  if (n.type === 'ADMIN_SUPPORT_REQUEST' || n.referenceType === 'SUPPORT_CONVERSATION') {
+    if (isAdmin && n.referenceId) {
+      return `/admin/support-requests/${n.referenceId}`;
+    }
+    return '/contact-admin';
+  }
   if (!n.referenceId) return null;
   if (n.referenceType === 'APPOINTMENT') return '/appointments';
   if (n.referenceType === 'TRANSFER') {

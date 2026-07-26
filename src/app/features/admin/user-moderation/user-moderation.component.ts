@@ -167,9 +167,7 @@ import { UserProfileModalComponent } from '../../../shared/components/user-profi
       <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" (click)="closeApproveModal()"></div>
         <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md border border-slate-100 p-6">
-          <h2 class="text-lg font-bold text-gray-900 mb-1">
-            {{ approveTarget()?.status === 'PENDING_ADMIN_VALIDATION' ? 'Valider le praticien' : 'Renouveler l\'abonnement' }}
-          </h2>
+          <h2 class="text-lg font-bold text-gray-900 mb-1">{{ getApproveModalTitle() }}</h2>
           <p class="text-sm text-gray-500 mb-5">
             Dr. {{ approveTarget()?.firstName }} {{ approveTarget()?.lastName }}
           </p>
@@ -328,6 +326,12 @@ export class UserModerationComponent implements OnInit {
       },
       error: () => this.actionLoading.set(null),
     });
+  }
+
+  getApproveModalTitle(): string {
+    return this.approveTarget()?.status === 'PENDING_ADMIN_VALIDATION'
+      ? 'Valider le praticien'
+      : 'Renouveler l\'abonnement';
   }
 
   updateStatus(user: AdminUserDto, status: UserStatus, reason?: string, onSuccess?: () => void): void {

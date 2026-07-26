@@ -43,6 +43,16 @@ export const routes: Routes = [
       ),
   },
 
+  // Conversation avec l'administrateur
+  {
+    path: 'contact-admin',
+    canActivate: [authGuard, accountAccessGuard],
+    loadComponent: () =>
+      import('./features/account/contact-admin/contact-admin.component').then(
+        m => m.ContactAdminComponent
+      ),
+  },
+
   // Dashboard Patient
   {
     path: 'dashboard/patient',
@@ -222,6 +232,13 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/admin/support-requests/support-requests.component').then(
             m => m.SupportRequestsComponent
+          ),
+      },
+      {
+        path: 'support-requests/:userId',
+        loadComponent: () =>
+          import('./features/admin/support-requests/support-conversation.component').then(
+            m => m.SupportConversationComponent
           ),
       },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },

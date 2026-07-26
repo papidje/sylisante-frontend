@@ -3,6 +3,7 @@ import {
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { NotificationService } from '../../../core/services/notification.service';
+import { AuthService } from '../../../core/services/auth.service';
 import {
   NotificationDto,
   NOTIFICATION_ICONS,
@@ -117,6 +118,7 @@ export class NotificationBellComponent implements OnInit, OnDestroy {
 
   constructor(
     public notificationService: NotificationService,
+    private authService: AuthService,
     private router: Router,
     private elRef: ElementRef
   ) {}
@@ -140,7 +142,7 @@ export class NotificationBellComponent implements OnInit, OnDestroy {
     if (!notif.isRead) {
       this.notificationService.markAsRead(notif.id).subscribe();
     }
-    const route = notificationRoute(notif);
+    const route = notificationRoute(notif, this.authService.isAdmin());
     if (route) {
       this.router.navigateByUrl(route);
     }

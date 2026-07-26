@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { AdminUserDto, AdminUserDetailDto, AdminSupportRequestDto, UserStatus } from '../models/user.model';
+import { SupportConversationSummaryDto, SupportMessageDto } from '../models/support.model';
 import { CityDto, SpecialtyDto } from '../models/city.model';
 import { PlanningAlertDto } from '../models/planning-alert.model';
 
@@ -38,6 +39,21 @@ export class AdminService {
     return this.http.patch<AdminSupportRequestDto>(
       `/api/admin/support-requests/${requestId}/resolve`,
       { adminResponse: adminResponse ?? null }
+    );
+  }
+
+  getSupportConversations(): Observable<SupportConversationSummaryDto[]> {
+    return this.http.get<SupportConversationSummaryDto[]>('/api/admin/support/conversations');
+  }
+
+  getSupportConversationMessages(userId: number): Observable<SupportMessageDto[]> {
+    return this.http.get<SupportMessageDto[]>(`/api/admin/support/conversations/${userId}/messages`);
+  }
+
+  replyToSupportConversation(userId: number, message: string): Observable<SupportMessageDto> {
+    return this.http.post<SupportMessageDto>(
+      `/api/admin/support/conversations/${userId}/messages`,
+      { message }
     );
   }
 

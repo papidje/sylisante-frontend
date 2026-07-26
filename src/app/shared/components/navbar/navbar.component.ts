@@ -105,6 +105,11 @@ import { NotificationBellComponent } from '../notification-bell/notification-bel
                 <a routerLink="/admin/audit-logs" routerLinkActive="nav-active"
                    class="nav-link">Journal d'audit</a>
               }
+              } @else if (!authService.isAdmin()) {
+                <a routerLink="/account-restricted" routerLinkActive="nav-active"
+                   class="nav-link">Mon compte</a>
+                <a routerLink="/contact-admin" routerLinkActive="nav-active"
+                   class="nav-link">Contacter l'admin</a>
               }
 
             </div>

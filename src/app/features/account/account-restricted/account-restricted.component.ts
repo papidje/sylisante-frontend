@@ -1,12 +1,12 @@
 import { Component, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { getAccountRestrictionMessage } from '../../../core/models/user.model';
-import { ContactAdminModalComponent } from '../../../shared/components/contact-admin-modal/contact-admin-modal.component';
 
 @Component({
   selector: 'app-account-restricted',
   standalone: true,
-  imports: [ContactAdminModalComponent],
+  imports: [RouterLink],
   template: `
     <div class="min-h-[calc(100vh-4rem)] bg-gradient-to-br from-slate-50 to-sky-50 flex items-center justify-center p-4">
       <div class="w-full max-w-lg">
@@ -23,9 +23,9 @@ import { ContactAdminModalComponent } from '../../../shared/components/contact-a
             {{ restrictionMessage() }}
           </p>
 
-          <button type="button" (click)="contactVisible.set(true)" class="btn-primary w-full py-3">
+          <a routerLink="/contact-admin" class="btn-primary w-full py-3 inline-block">
             Contacter l'administrateur
-          </button>
+          </a>
 
           <button type="button" (click)="authService.logout()"
                   class="mt-4 text-sm text-gray-500 hover:text-gray-700 underline">
@@ -34,15 +34,9 @@ import { ContactAdminModalComponent } from '../../../shared/components/contact-a
         </div>
       </div>
     </div>
-
-    <app-contact-admin-modal
-      [visible]="contactVisible()"
-      (closed)="contactVisible.set(false)" />
   `,
 })
 export class AccountRestrictedComponent {
-  contactVisible = signal(false);
-
   constructor(public authService: AuthService) {}
 
   restrictionMessage(): string {
