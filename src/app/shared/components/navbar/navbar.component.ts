@@ -36,6 +36,7 @@ import { NotificationBellComponent } from '../notification-bell/notification-bel
             <!-- Navigation liens -->
             <div class="hidden sm:flex items-end h-16 gap-0.5">
 
+              @if (!authService.isAccountRestricted()) {
               @if (authService.isPatient()) {
                 <a routerLink="/dashboard/patient" routerLinkActive="nav-active"
                    class="nav-link">Tableau de bord</a>
@@ -52,12 +53,15 @@ import { NotificationBellComponent } from '../notification-bell/notification-bel
               @if (authService.isPractitioner()) {
                 <a routerLink="/dashboard/practitioner" routerLinkActive="nav-active"
                    class="nav-link">Tableau de bord</a>
+                @if (!authService.isPendingValidation()) {
                 <a routerLink="/appointments" routerLinkActive="nav-active"
                    class="nav-link">Planning</a>
                 <a routerLink="/calendar" routerLinkActive="nav-active"
                    class="nav-link">Calendrier</a>
+                }
                 <a routerLink="/availabilities" routerLinkActive="nav-active"
                    class="nav-link">Disponibilités</a>
+                @if (!authService.isPendingValidation()) {
                 <a routerLink="/planning-alerts" routerLinkActive="nav-active"
                    class="nav-link relative">
                   Alertes
@@ -82,6 +86,7 @@ import { NotificationBellComponent } from '../notification-bell/notification-bel
                 </a>
                 <a routerLink="/shared-records" routerLinkActive="nav-active"
                    class="nav-link">Partagés</a>
+                }
                 <a routerLink="/profile" routerLinkActive="nav-active"
                    class="nav-link">Mon profil</a>
               }
@@ -91,12 +96,15 @@ import { NotificationBellComponent } from '../notification-bell/notification-bel
                    class="nav-link">Tableau de bord</a>
                 <a routerLink="/admin/users" routerLinkActive="nav-active"
                    class="nav-link">Utilisateurs</a>
+                <a routerLink="/admin/support-requests" routerLinkActive="nav-active"
+                   class="nav-link">Demandes</a>
                 <a routerLink="/admin/cities" routerLinkActive="nav-active"
                    class="nav-link">Référentiels</a>
                 <a routerLink="/admin/alerts" routerLinkActive="nav-active"
                    class="nav-link">Alertes Planning</a>
                 <a routerLink="/admin/audit-logs" routerLinkActive="nav-active"
                    class="nav-link">Journal d'audit</a>
+              }
               }
 
             </div>

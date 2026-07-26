@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { AdminUserDto, AdminUserDetailDto, UserStatus } from '../models/user.model';
+import { AdminUserDto, AdminUserDetailDto, AdminSupportRequestDto, UserStatus } from '../models/user.model';
 import { CityDto, SpecialtyDto } from '../models/city.model';
 import { PlanningAlertDto } from '../models/planning-alert.model';
 
@@ -22,8 +22,23 @@ export class AdminService {
   getUserById(userId: number): Observable<AdminUserDetailDto> {
     return this.http.get<AdminUserDetailDto>(`/api/admin/users/${userId}`);
   }
-  updateUserStatus(userId: number, status: UserStatus): Observable<AdminUserDto> {
-    return this.http.patch<AdminUserDto>(`/api/admin/users/${userId}/status`, { status });
+  updateUserStatus(userId: number, status: UserStatus, reason?: string): Observable<AdminUserDto> {
+    return this.http.patch<AdminUserDto>(`/api/admin/users/${userId}/status`, { status, reason: reason ?? null });
+  }
+  approvePractitioner(userId: number, subscriptionExpiresAt: string): Observable<AdminUserDto> {
+    return this.http.patch<AdminUserDto>(`/api/admin/users/${userId}/approve-practitioner`, {
+      subscriptionExpiresAt,
+    });
+  }
+
+  getSupportRequests(): Observable<AdminSupportRequestDto[]> {
+    return this.http.get<AdminSupportRequestDto[]>('/api/admin/support-requests');
+  }
+  resolveSupportRequest(requestId: number, adminResponse?: string): Observable<AdminSupportRequestDto> {
+    return this.http.patch<AdminSupportRequestDto>(
+      `/api/admin/support-requests/${requestId}/resolve`,
+      { adminResponse: adminResponse ?? null }
+    );
   }
 
   // Cities

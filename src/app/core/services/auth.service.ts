@@ -8,6 +8,8 @@ import {
   RegisterRequest,
   ValidateAccountRequest,
   ResendCodeRequest,
+  isAccountRestricted,
+  isPendingAdminValidation,
 } from '../models/user.model';
 import { NotificationService } from './notification.service';
 
@@ -23,6 +25,12 @@ export class AuthService {
   readonly isPatient = computed(() => this._currentUser()?.role === 'ROLE_PATIENT');
   readonly isPractitioner = computed(() => this._currentUser()?.role === 'ROLE_PRATICIEN');
   readonly isAdmin = computed(() => this._currentUser()?.role === 'ROLE_ADMIN');
+  readonly isAccountRestricted = computed(() =>
+    isAccountRestricted(this._currentUser()?.status)
+  );
+  readonly isPendingValidation = computed(() =>
+    isPendingAdminValidation(this._currentUser()?.status)
+  );
 
   constructor(
     private http: HttpClient,
@@ -94,6 +102,9 @@ export class AuthService {
   }
 
   getDefaultRoute(): string {
+    if (this.isAccountRestricted()) {
+      return '/account-restricted';
+    }
     const role = this._currentUser()?.role;
     if (role === 'ROLE_ADMIN') return '/admin/dashboard';
     if (role === 'ROLE_PRATICIEN') return '/dashboard/practitioner';

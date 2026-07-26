@@ -1,6 +1,8 @@
 import { Routes } from '@angular/router';
 import { authGuard, guestGuard } from './core/guards/auth.guard';
 import { roleGuard } from './core/guards/role.guard';
+import { accountAccessGuard } from './core/guards/account-access.guard';
+import { practitionerOperationalGuard } from './core/guards/practitioner-operational.guard';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/auth/login', pathMatch: 'full' },
@@ -31,10 +33,20 @@ export const routes: Routes = [
     ],
   },
 
+  // Compte restreint (suspendu / abonnement expiré)
+  {
+    path: 'account-restricted',
+    canActivate: [authGuard, accountAccessGuard],
+    loadComponent: () =>
+      import('./features/account/account-restricted/account-restricted.component').then(
+        m => m.AccountRestrictedComponent
+      ),
+  },
+
   // Dashboard Patient
   {
     path: 'dashboard/patient',
-    canActivate: [authGuard, roleGuard('ROLE_PATIENT')],
+    canActivate: [authGuard, accountAccessGuard, roleGuard('ROLE_PATIENT')],
     loadComponent: () =>
       import('./features/dashboard/patient-dashboard/patient-dashboard.component').then(
         m => m.PatientDashboardComponent
@@ -44,7 +56,7 @@ export const routes: Routes = [
   // Dashboard Praticien
   {
     path: 'dashboard/practitioner',
-    canActivate: [authGuard, roleGuard('ROLE_PRATICIEN')],
+    canActivate: [authGuard, accountAccessGuard, roleGuard('ROLE_PRATICIEN')],
     loadComponent: () =>
       import('./features/dashboard/practitioner-dashboard/practitioner-dashboard.component').then(
         m => m.PractitionerDashboardComponent
@@ -54,10 +66,11 @@ export const routes: Routes = [
   // Rendez-vous
   {
     path: 'appointments',
-    canActivate: [authGuard],
+    canActivate: [authGuard, accountAccessGuard],
     children: [
       {
         path: '',
+        canActivate: [practitionerOperationalGuard],
         loadComponent: () =>
           import('./features/appointments/appointment-list/appointment-list.component').then(
             m => m.AppointmentListComponent
@@ -77,7 +90,7 @@ export const routes: Routes = [
   // Profil Praticien
   {
     path: 'profile',
-    canActivate: [authGuard, roleGuard('ROLE_PRATICIEN')],
+    canActivate: [authGuard, accountAccessGuard, roleGuard('ROLE_PRATICIEN')],
     loadComponent: () =>
       import('./features/profile/practitioner-profile/practitioner-profile.component').then(
         m => m.PractitionerProfileComponent
@@ -87,7 +100,7 @@ export const routes: Routes = [
   // Profil Patient
   {
     path: 'patient-profile',
-    canActivate: [authGuard, roleGuard('ROLE_PATIENT')],
+    canActivate: [authGuard, accountAccessGuard, roleGuard('ROLE_PATIENT')],
     loadComponent: () =>
       import('./features/profile/patient-profile/patient-profile.component').then(
         m => m.PatientProfileComponent
@@ -97,7 +110,7 @@ export const routes: Routes = [
   // Calendrier Praticien
   {
     path: 'calendar',
-    canActivate: [authGuard, roleGuard('ROLE_PRATICIEN')],
+    canActivate: [authGuard, accountAccessGuard, roleGuard('ROLE_PRATICIEN'), practitionerOperationalGuard],
     loadComponent: () =>
       import('./features/practitioner/calendar/practitioner-calendar.component').then(
         m => m.PractitionerCalendarComponent
@@ -107,7 +120,7 @@ export const routes: Routes = [
   // Disponibilités Praticien
   {
     path: 'availabilities',
-    canActivate: [authGuard, roleGuard('ROLE_PRATICIEN')],
+    canActivate: [authGuard, accountAccessGuard, roleGuard('ROLE_PRATICIEN')],
     loadComponent: () =>
       import('./features/practitioner/availability-management/availability-management.component').then(
         m => m.AvailabilityManagementComponent
@@ -117,7 +130,7 @@ export const routes: Routes = [
   // Alertes Planning Praticien
   {
     path: 'planning-alerts',
-    canActivate: [authGuard, roleGuard('ROLE_PRATICIEN')],
+    canActivate: [authGuard, accountAccessGuard, roleGuard('ROLE_PRATICIEN'), practitionerOperationalGuard],
     loadComponent: () =>
       import('./features/practitioner/planning-alerts/planning-alerts.component').then(
         m => m.PlanningAlertsComponent
@@ -127,7 +140,7 @@ export const routes: Routes = [
   // Dossier médical & Comptes rendus (Praticien)
   {
     path: 'consultation-reports',
-    canActivate: [authGuard, roleGuard('ROLE_PRATICIEN')],
+    canActivate: [authGuard, accountAccessGuard, roleGuard('ROLE_PRATICIEN'), practitionerOperationalGuard],
     loadComponent: () =>
       import('./features/practitioner/consultation-reports/consultation-reports.component').then(
         m => m.ConsultationReportsComponent
@@ -137,7 +150,7 @@ export const routes: Routes = [
   // Transferts en attente d'approbation (Praticien source)
   {
     path: 'transfer-approvals',
-    canActivate: [authGuard, roleGuard('ROLE_PRATICIEN')],
+    canActivate: [authGuard, accountAccessGuard, roleGuard('ROLE_PRATICIEN'), practitionerOperationalGuard],
     loadComponent: () =>
       import('./features/practitioner/transfer-approvals/transfer-approvals.component').then(
         m => m.TransferApprovalsComponent
@@ -147,7 +160,7 @@ export const routes: Routes = [
   // Dossiers partagés reçus (Praticien cible)
   {
     path: 'shared-records',
-    canActivate: [authGuard, roleGuard('ROLE_PRATICIEN')],
+    canActivate: [authGuard, accountAccessGuard, roleGuard('ROLE_PRATICIEN'), practitionerOperationalGuard],
     loadComponent: () =>
       import('./features/practitioner/shared-records/shared-records.component').then(
         m => m.SharedRecordsComponent
@@ -157,7 +170,7 @@ export const routes: Routes = [
   // Transferts de dossier (Patient)
   {
     path: 'my-transfers',
-    canActivate: [authGuard, roleGuard('ROLE_PATIENT')],
+    canActivate: [authGuard, accountAccessGuard, roleGuard('ROLE_PATIENT')],
     loadComponent: () =>
       import('./features/patient/patient-transfers/patient-transfers.component').then(
         m => m.PatientTransfersComponent
@@ -202,6 +215,13 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/admin/audit-logs/audit-logs.component').then(
             m => m.AuditLogsComponent
+          ),
+      },
+      {
+        path: 'support-requests',
+        loadComponent: () =>
+          import('./features/admin/support-requests/support-requests.component').then(
+            m => m.SupportRequestsComponent
           ),
       },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
