@@ -1,8 +1,10 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { NavbarComponent } from './shared/components/navbar/navbar.component';
 import { AccountStatusBannerComponent } from './shared/components/account-status-banner/account-status-banner.component';
 import { AuthService } from './core/services/auth.service';
+import { NotificationService } from './core/services/notification.service';
 
 @Component({
   selector: 'app-root',
@@ -16,6 +18,22 @@ import { AuthService } from './core/services/auth.service';
     <router-outlet />
   `,
 })
-export class AppComponent {
-  constructor(public authService: AuthService) {}
+export class AppComponent implements OnInit, OnDestroy {
+  private accountStatusSub?: Subscription;
+
+  constructor(
+    public authService: AuthService,
+    private notificationService: NotificationService,
+  ) {}
+
+  ngOnInit(): void {
+    this.authService.syncSessionFromServer().subscribe();
+    this.accountStatusSub = this.notificationService.accountStatusChanged.subscribe(() => {
+      this.authService.syncSessionFromServer().subscribe();
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.accountStatusSub?.unsubscribe();
+  }
 }

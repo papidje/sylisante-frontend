@@ -1,7 +1,7 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { tap, Observable } from 'rxjs';
+import { tap, Observable, of } from 'rxjs';
 import {
   AuthResponse,
   LoginRequest,
@@ -10,6 +10,7 @@ import {
   ResendCodeRequest,
   isAccountRestricted,
   isPendingAdminValidation,
+  needsAccountDisclaimer,
 } from '../models/user.model';
 import { NotificationService } from './notification.service';
 
@@ -30,6 +31,9 @@ export class AuthService {
   );
   readonly isPendingValidation = computed(() =>
     isPendingAdminValidation(this._currentUser()?.status)
+  );
+  readonly needsAccountDisclaimer = computed(() =>
+    needsAccountDisclaimer(this._currentUser()?.status, this._currentUser()?.role)
   );
 
   constructor(
@@ -86,6 +90,20 @@ export class AuthService {
         const stored = { ...response, token: this.getToken(), refreshToken: this.getRefreshToken() };
         localStorage.setItem(this.USER_KEY, JSON.stringify(stored));
         this._currentUser.set(stored);
+      })
+    );
+  }
+
+  /** Resynchronise le statut compte depuis le serveur et redirige si restreint. */
+  syncSessionFromServer(): Observable<AuthResponse | null> {
+    if (!this.isLoggedIn() || !this.getToken()) {
+      return of(null);
+    }
+    return this.getProfile().pipe(
+      tap(() => {
+        if (this.isAccountRestricted()) {
+          this.router.navigate(['/account-restricted']);
+        }
       })
     );
   }

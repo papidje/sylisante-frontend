@@ -11,7 +11,9 @@ export type NotificationType =
   | 'TRANSFER_REJECTED'
   | 'TRANSFER_RECEIVED'
   | 'ACCOUNT_SUSPENDED'
-  | 'ACCOUNT_ACTIVATED';
+  | 'ACCOUNT_ACTIVATED'
+  | 'SUBSCRIPTION_EXPIRED'
+  | 'SUBSCRIPTION_EXPIRING_SOON';
 
 export interface NotificationDto {
   id: number;
@@ -45,6 +47,8 @@ export const NOTIFICATION_ICONS: Record<NotificationType, string> = {
   TRANSFER_RECEIVED:      '📥',
   ACCOUNT_SUSPENDED:      '🚫',
   ACCOUNT_ACTIVATED:      '🎉',
+  SUBSCRIPTION_EXPIRED:   '⏳',
+  SUBSCRIPTION_EXPIRING_SOON: '⚠️',
 };
 
 /** Route cible pour la navigation au clic sur la notification. */

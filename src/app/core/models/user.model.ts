@@ -96,6 +96,12 @@ export function isPendingAdminValidation(status: UserStatus | undefined): boolea
   return status === 'PENDING_ADMIN_VALIDATION';
 }
 
+/** Bandeau d'avertissement + contact admin (praticien en attente ou compte restreint). */
+export function needsAccountDisclaimer(status: UserStatus | undefined, role: Role | undefined): boolean {
+  if (!status || role === 'ROLE_ADMIN') return false;
+  return isPendingAdminValidation(status) || isAccountRestricted(status);
+}
+
 export function getAccountRestrictionMessage(status: UserStatus | undefined, role: Role | undefined): string {
   if (status === 'SUSPENDED') {
     return 'Votre compte a été suspendu par l\'administrateur. Vous ne pouvez pas accéder aux fonctionnalités de la plateforme pour le moment.';

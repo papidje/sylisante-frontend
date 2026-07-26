@@ -1,6 +1,6 @@
 import { Injectable, signal, computed, OnDestroy } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, tap } from 'rxjs';
+import { Observable, Subject, tap } from 'rxjs';
 import { NotificationDto, NotificationPage } from '../models/notification.model';
 
 /**
@@ -30,6 +30,9 @@ export class NotificationService implements OnDestroy {
   readonly unreadCount = computed(() =>
     this.notifications().filter(n => !n.isRead).length
   );
+
+  /** Émis lors d'une suspension ou expiration de compte (pour resynchroniser la session). */
+  readonly accountStatusChanged = new Subject<void>();
 
   constructor(private http: HttpClient) {}
 
@@ -159,6 +162,9 @@ export class NotificationService implements OnDestroy {
       }
       return [notif, ...list];
     });
+    if (notif.type === 'ACCOUNT_SUSPENDED' || notif.type === 'SUBSCRIPTION_EXPIRED') {
+      this.accountStatusChanged.next();
+    }
   }
 
   private mergeNotifications(incoming: NotificationDto[]): void {
