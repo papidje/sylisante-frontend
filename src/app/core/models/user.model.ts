@@ -1,7 +1,7 @@
 import { PractitionerProfileDto } from './practitioner.model';
 import { UserProfileDto } from './user-profile.model';
 
-export type Role = 'ROLE_PATIENT' | 'ROLE_PRATICIEN' | 'ROLE_ADMIN';
+export type Role = 'ROLE_PATIENT' | 'ROLE_PRATICIEN' | 'ROLE_SECRETARY' | 'ROLE_ADMIN';
 export type UserStatus =
   | 'ACTIVE'
   | 'INACTIVE'
@@ -74,6 +74,27 @@ export interface ResendCodeRequest {
   email: string;
 }
 
+export interface InitiateRegistrationRequest {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+}
+
+export interface CompleteRegistrationRequest {
+  email: string;
+  validationCode: string;
+  password: string;
+}
+
+export interface ActivateSecretaryRequest {
+  email: string;
+  token: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+}
+
 export const USER_STATUS_LABELS: Record<UserStatus, string> = {
   ACTIVE: 'Actif',
   INACTIVE: 'Inactif',
@@ -85,6 +106,7 @@ export const USER_STATUS_LABELS: Record<UserStatus, string> = {
 export const ROLE_LABELS: Record<Role, string> = {
   ROLE_PATIENT: 'Patient',
   ROLE_PRATICIEN: 'Praticien',
+  ROLE_SECRETARY: 'Secrétaire',
   ROLE_ADMIN: 'Administrateur',
 };
 

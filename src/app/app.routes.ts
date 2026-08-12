@@ -1,9 +1,10 @@
 import { Routes } from '@angular/router';
 import { authGuard, guestGuard } from './core/guards/auth.guard';
-import { roleGuard } from './core/guards/role.guard';
+import { roleGuard, rolesGuard } from './core/guards/role.guard';
 import { accountAccessGuard } from './core/guards/account-access.guard';
 import { contactAdminGuard } from './core/guards/contact-admin.guard';
 import { practitionerOperationalGuard } from './core/guards/practitioner-operational.guard';
+import { secretaryAccessGuard } from './core/guards/secretary-access.guard';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/auth/login', pathMatch: 'full' },
@@ -28,6 +29,13 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/auth/validate-account/validate-account.component').then(
             m => m.ValidateAccountComponent
+          ),
+      },
+      {
+        path: 'secretary/activate',
+        loadComponent: () =>
+          import('./features/auth/secretary-activate/secretary-activate.component').then(
+            m => m.SecretaryActivateComponent
           ),
       },
       { path: '', redirectTo: 'login', pathMatch: 'full' },
@@ -64,6 +72,16 @@ export const routes: Routes = [
       ),
   },
 
+  // Dashboard Secrétaire
+  {
+    path: 'dashboard/secretary',
+    canActivate: [authGuard, accountAccessGuard, roleGuard('ROLE_SECRETARY'), secretaryAccessGuard],
+    loadComponent: () =>
+      import('./features/dashboard/secretary-dashboard/secretary-dashboard.component').then(
+        m => m.SecretaryDashboardComponent
+      ),
+  },
+
   // Dashboard Praticien
   {
     path: 'dashboard/practitioner',
@@ -81,7 +99,7 @@ export const routes: Routes = [
     children: [
       {
         path: '',
-        canActivate: [practitionerOperationalGuard],
+        canActivate: [practitionerOperationalGuard, secretaryAccessGuard],
         loadComponent: () =>
           import('./features/appointments/appointment-list/appointment-list.component').then(
             m => m.AppointmentListComponent
@@ -118,10 +136,26 @@ export const routes: Routes = [
       ),
   },
 
-  // Calendrier Praticien
+  // Mes secrétaires (Praticien)
+  {
+    path: 'secretaries',
+    canActivate: [authGuard, accountAccessGuard, roleGuard('ROLE_PRATICIEN')],
+    loadComponent: () =>
+      import('./features/practitioner/secretaries/practitioner-secretaries.component').then(
+        m => m.PractitionerSecretariesComponent
+      ),
+  },
+
+  // Calendrier Praticien / Secrétaire
   {
     path: 'calendar',
-    canActivate: [authGuard, accountAccessGuard, roleGuard('ROLE_PRATICIEN'), practitionerOperationalGuard],
+    canActivate: [
+      authGuard,
+      accountAccessGuard,
+      rolesGuard(['ROLE_PRATICIEN', 'ROLE_SECRETARY']),
+      practitionerOperationalGuard,
+      secretaryAccessGuard,
+    ],
     loadComponent: () =>
       import('./features/practitioner/calendar/practitioner-calendar.component').then(
         m => m.PractitionerCalendarComponent

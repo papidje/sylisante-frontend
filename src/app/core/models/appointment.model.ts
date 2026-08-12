@@ -41,11 +41,15 @@ export interface CancelAppointmentRequest {
   reason: string;
 }
 
+import { GuestPatientInfo } from './patient.model';
+
 export interface CreateAppointmentRequest {
   practitionerId: number;
   appointmentDateTime: string;
   consultationType?: string | null;
   reason?: string | null;
+  patientId?: number | null;
+  guestPatientInfo?: GuestPatientInfo | null;
 }
 
 export interface SubmitPaymentReferenceRequest {

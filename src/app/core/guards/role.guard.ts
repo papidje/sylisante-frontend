@@ -20,3 +20,21 @@ export const roleGuard = (requiredRole: Role): CanActivateFn => {
     return router.createUrlTree([authService.getDefaultRoute()]);
   };
 };
+
+export const rolesGuard = (requiredRoles: Role[]): CanActivateFn => {
+  return () => {
+    const authService = inject(AuthService);
+    const router = inject(Router);
+
+    const user = authService.currentUser();
+    if (!user) {
+      return router.createUrlTree(['/auth/login']);
+    }
+
+    if (requiredRoles.includes(user.role)) {
+      return true;
+    }
+
+    return router.createUrlTree([authService.getDefaultRoute()]);
+  };
+};

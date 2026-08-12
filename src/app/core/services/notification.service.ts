@@ -34,6 +34,9 @@ export class NotificationService implements OnDestroy {
   /** Émis lors d'une suspension ou expiration de compte (pour resynchroniser la session). */
   readonly accountStatusChanged = new Subject<void>();
 
+  /** Émis lors d'un changement d'accès secrétaire ↔ praticien. */
+  readonly secretaryAccessChanged = new Subject<void>();
+
   constructor(private http: HttpClient) {}
 
   // ── SSE ──────────────────────────────────────────────────────────────────
@@ -164,6 +167,13 @@ export class NotificationService implements OnDestroy {
     });
     if (notif.type === 'ACCOUNT_SUSPENDED' || notif.type === 'SUBSCRIPTION_EXPIRED') {
       this.accountStatusChanged.next();
+    }
+    if (
+      notif.type === 'SECRETARY_ACCESS_SUSPENDED'
+      || notif.type === 'SECRETARY_ACCESS_REACTIVATED'
+      || notif.type === 'SECRETARY_INVITATION'
+    ) {
+      this.secretaryAccessChanged.next();
     }
   }
 

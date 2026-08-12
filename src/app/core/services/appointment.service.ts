@@ -16,20 +16,35 @@ export class AppointmentService {
     return this.http.get<AppointmentResponse[]>('/api/appointments');
   }
 
-  getUpcoming(): Observable<AppointmentResponse[]> {
-    return this.http.get<AppointmentResponse[]>('/api/appointments/upcoming');
+  getUpcoming(practitionerId?: number): Observable<AppointmentResponse[]> {
+    let params = new HttpParams();
+    if (practitionerId != null) {
+      params = params.set('practitionerId', practitionerId);
+    }
+    return this.http.get<AppointmentResponse[]>('/api/appointments/upcoming', { params });
   }
 
-  getPast(): Observable<AppointmentResponse[]> {
-    return this.http.get<AppointmentResponse[]>('/api/appointments/past');
+  getPast(practitionerId?: number): Observable<AppointmentResponse[]> {
+    let params = new HttpParams();
+    if (practitionerId != null) {
+      params = params.set('practitionerId', practitionerId);
+    }
+    return this.http.get<AppointmentResponse[]>('/api/appointments/past', { params });
   }
 
-  getCancelled(): Observable<AppointmentResponse[]> {
-    return this.http.get<AppointmentResponse[]>('/api/appointments/cancelled');
+  getCancelled(practitionerId?: number): Observable<AppointmentResponse[]> {
+    let params = new HttpParams();
+    if (practitionerId != null) {
+      params = params.set('practitionerId', practitionerId);
+    }
+    return this.http.get<AppointmentResponse[]>('/api/appointments/cancelled', { params });
   }
 
-  getCalendar(from: string, to: string): Observable<AppointmentResponse[]> {
-    const params = new HttpParams().set('from', from).set('to', to);
+  getCalendar(from: string, to: string, practitionerId?: number): Observable<AppointmentResponse[]> {
+    let params = new HttpParams().set('from', from).set('to', to);
+    if (practitionerId != null) {
+      params = params.set('practitionerId', practitionerId);
+    }
     return this.http.get<AppointmentResponse[]>('/api/appointments/calendar', { params });
   }
 

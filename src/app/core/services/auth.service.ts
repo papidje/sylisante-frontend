@@ -8,6 +8,9 @@ import {
   RegisterRequest,
   ValidateAccountRequest,
   ResendCodeRequest,
+  InitiateRegistrationRequest,
+  CompleteRegistrationRequest,
+  ActivateSecretaryRequest,
   isAccountRestricted,
   isPendingAdminValidation,
   needsAccountDisclaimer,
@@ -25,6 +28,7 @@ export class AuthService {
   readonly isLoggedIn = computed(() => this._currentUser() !== null);
   readonly isPatient = computed(() => this._currentUser()?.role === 'ROLE_PATIENT');
   readonly isPractitioner = computed(() => this._currentUser()?.role === 'ROLE_PRATICIEN');
+  readonly isSecretary = computed(() => this._currentUser()?.role === 'ROLE_SECRETARY');
   readonly isAdmin = computed(() => this._currentUser()?.role === 'ROLE_ADMIN');
   readonly isAccountRestricted = computed(() =>
     isAccountRestricted(this._currentUser()?.status)
@@ -50,6 +54,32 @@ export class AuthService {
 
   register(request: RegisterRequest): Observable<{ message: string }> {
     return this.http.post<{ message: string }>('/api/auth/register', request);
+  }
+
+  initiatePatientRegistration(request: InitiateRegistrationRequest): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>('/api/auth/patient/register/initiate', request);
+  }
+
+  completePatientRegistration(request: CompleteRegistrationRequest): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>('/api/auth/patient/register/complete', request).pipe(
+      tap(response => {
+        this.storeSession(response);
+        if (response.token) {
+          this.notificationService.connect(response.token);
+        }
+      })
+    );
+  }
+
+  activateSecretaryAccount(request: ActivateSecretaryRequest): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>('/api/auth/secretary/activate', request).pipe(
+      tap(response => {
+        this.storeSession(response);
+        if (response.token) {
+          this.notificationService.connect(response.token);
+        }
+      })
+    );
   }
 
   validateAccount(request: ValidateAccountRequest): Observable<{ message: string }> {
@@ -126,6 +156,7 @@ export class AuthService {
     const role = this._currentUser()?.role;
     if (role === 'ROLE_ADMIN') return '/admin/dashboard';
     if (role === 'ROLE_PRATICIEN') return '/dashboard/practitioner';
+    if (role === 'ROLE_SECRETARY') return '/dashboard/secretary';
     return '/dashboard/patient';
   }
 

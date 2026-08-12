@@ -3,10 +3,13 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Router } from '@angular/router';
 import { AppointmentService } from '../../../core/services/appointment.service';
+import { AuthService } from '../../../core/services/auth.service';
+import { SecretaryContextService } from '../../../core/services/secretary-context.service';
 import { AppointmentResponse, AppointmentStatus, APPOINTMENT_STATUS_LABELS } from '../../../core/models/appointment.model';
 import { formatLocalDateTime, parseLocalDateTime } from '../../../core/utils/date-utils';
 import { SyliSpinnerComponent } from '../../../shared/components/syli-spinner/syli-spinner.component';
 import { UserProfileModalComponent } from '../../../shared/components/user-profile-modal/user-profile-modal.component';
+import { CreateAppointmentModalComponent } from '../../../shared/components/create-appointment-modal/create-appointment-modal.component';
 
 type CalendarView = 'day' | 'week' | 'month';
 
@@ -20,7 +23,7 @@ interface CalendarDay {
 @Component({
   selector: 'app-practitioner-calendar',
   standalone: true,
-  imports: [  CommonModule, RouterLink, SyliSpinnerComponent, UserProfileModalComponent],
+  imports: [CommonModule, RouterLink, SyliSpinnerComponent, UserProfileModalComponent, CreateAppointmentModalComponent],
   template: `
     <div class="max-w-7xl mx-auto px-4 py-6">
 
@@ -28,9 +31,19 @@ interface CalendarDay {
       <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
           <h1 class="text-2xl font-bold text-gray-900">Calendrier</h1>
-          <p class="text-gray-500 text-sm mt-0.5">Vue interactive de vos rendez-vous</p>
+          <p class="text-gray-500 text-sm mt-0.5">
+            @if (authService.isSecretary() && contextService.selectedPractitioner()) {
+              Dr. {{ contextService.selectedPractitioner()!.firstName }} {{ contextService.selectedPractitioner()!.lastName }}
+            } @else {
+              Vue interactive de vos rendez-vous
+            }
+          </p>
         </div>
         <div class="flex items-center gap-3 flex-wrap">
+          <button type="button" (click)="openCreateModal()"
+                  class="btn-primary text-sm py-2 px-4">
+            + Nouveau RDV
+          </button>
           <!-- Bascule Jour / Semaine / Mois -->
           <div class="flex bg-gray-100 rounded-xl p-1 gap-0.5">
             @for (v of views; track v.id) {
@@ -88,10 +101,18 @@ interface CalendarDay {
 
       @if (loading()) {
         <app-syli-spinner size="lg" [showLabel]="true" [centered]="true" />
+      } @else if (authService.isSecretary() && contextService.hasNoPractitionerAccess()) {
+        <div class="card text-center py-16">
+          <p class="text-gray-600 font-medium">Aucun praticien accessible</p>
+          <p class="text-sm text-gray-400 mt-2">
+            Vos accès ont peut-être été suspendus. Consultez vos notifications.
+          </p>
+          <a routerLink="/dashboard/secretary" class="btn-primary mt-4 inline-block text-sm">Tableau de bord</a>
+        </div>
       }
 
       <!-- ══════════ VUE MOIS ══════════ -->
-      @if (!loading() && currentView() === 'month') {
+      @if (!loading() && !(authService.isSecretary() && contextService.hasNoPractitionerAccess()) && currentView() === 'month') {
         <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
           <!-- Jours de la semaine -->
           <div class="grid grid-cols-7 border-b border-gray-200">
@@ -135,7 +156,7 @@ interface CalendarDay {
       }
 
       <!-- ══════════ VUE SEMAINE ══════════ -->
-      @if (!loading() && currentView() === 'week') {
+      @if (!loading() && !(authService.isSecretary() && contextService.hasNoPractitionerAccess()) && currentView() === 'week') {
         <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
           <!-- En-têtes jours -->
           <div class="grid grid-cols-7 border-b border-gray-200">
@@ -181,7 +202,7 @@ interface CalendarDay {
       }
 
       <!-- ══════════ VUE JOUR ══════════ -->
-      @if (!loading() && currentView() === 'day') {
+      @if (!loading() && !(authService.isSecretary() && contextService.hasNoPractitionerAccess()) && currentView() === 'day') {
         <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
           <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
             <p class="font-semibold text-gray-800 text-base">
@@ -350,6 +371,12 @@ interface CalendarDay {
         [userId]="profileModalUserId()"
         (closed)="closeProfileModal()" />
 
+      <app-create-appointment-modal
+        [visible]="createModalVisible()"
+        [initialDate]="createModalInitialDate()"
+        (closed)="closeCreateModal()"
+        (created)="onAppointmentCreated()" />
+
     </div>
   `,
 })
@@ -362,6 +389,8 @@ export class PractitionerCalendarComponent implements OnInit {
   actionLoading  = signal(false);
   profileModalVisible = signal(false);
   profileModalUserId = signal<number | null>(null);
+  createModalVisible = signal(false);
+  createModalInitialDate = signal<Date | null>(null);
 
   readonly views = [
     { id: 'day'   as CalendarView, label: 'Jour'    },
@@ -374,6 +403,8 @@ export class PractitionerCalendarComponent implements OnInit {
   constructor(
     private appointmentService: AppointmentService,
     private router: Router,
+    public authService: AuthService,
+    public contextService: SecretaryContextService,
   ) {}
 
   ngOnInit(): void {
@@ -414,11 +445,18 @@ export class PractitionerCalendarComponent implements OnInit {
   }
 
   loadAppointments(): void {
+    const practitionerId = this.authService.isSecretary()
+      ? this.contextService.selectedPractitionerId() ?? undefined
+      : undefined;
+    if (this.authService.isSecretary() && !practitionerId) {
+      this.loading.set(false);
+      return;
+    }
     this.loading.set(true);
     const { from, to } = this.dateRange();
     const fmt = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T00:00:00`;
     const fmtEnd = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T23:59:59`;
-    this.appointmentService.getCalendar(fmt(from), fmtEnd(to)).subscribe({
+    this.appointmentService.getCalendar(fmt(from), fmtEnd(to), practitionerId).subscribe({
       next: (data) => { this.appointments.set(data); this.loading.set(false); },
       error: () => this.loading.set(false),
     });
@@ -501,6 +539,20 @@ export class PractitionerCalendarComponent implements OnInit {
 
   openModal(appt: AppointmentResponse): void  { this.modalAppointment.set(appt); }
   closeModal(): void { this.modalAppointment.set(null); }
+
+  openCreateModal(date?: Date): void {
+    this.createModalInitialDate.set(date ?? this.currentDate());
+    this.createModalVisible.set(true);
+  }
+
+  closeCreateModal(): void {
+    this.createModalVisible.set(false);
+    this.createModalInitialDate.set(null);
+  }
+
+  onAppointmentCreated(): void {
+    this.loadAppointments();
+  }
 
   goToReport(id: number): void {
     this.closeModal();

@@ -1,6 +1,7 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { PractitionerService } from '../../../core/services/practitioner.service';
 import { ReferenceDataService } from '../../../core/services/reference-data.service';
@@ -13,7 +14,7 @@ import { SyliSpinnerComponent } from '../../../shared/components/syli-spinner/sy
 @Component({
   selector: 'app-practitioner-profile',
   standalone: true,
-  imports: [  ReactiveFormsModule, CommonModule, ChangePasswordModalComponent, SyliSpinnerComponent],
+  imports: [ReactiveFormsModule, CommonModule, RouterLink, ChangePasswordModalComponent, SyliSpinnerComponent],
   template: `
     <div class="max-w-5xl mx-auto px-4 py-8">
       <div class="mb-6">
@@ -119,6 +120,15 @@ import { SyliSpinnerComponent } from '../../../shared/components/syli-spinner/sy
                   Modifier
                 </button>
               </div>
+            </div>
+
+            <!-- Équipe -->
+            <div class="card">
+              <h2 class="text-base font-semibold text-gray-900 mb-2">Équipe</h2>
+              <p class="text-sm text-gray-500 mb-3">Invitez des secrétaires pour gérer votre agenda</p>
+              <a routerLink="/secretaries" class="btn-secondary w-full text-sm text-center block">
+                Mes secrétaires
+              </a>
             </div>
 
             <!-- Section Informations générales -->

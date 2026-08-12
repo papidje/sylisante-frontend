@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AppointmentService } from '../../../core/services/appointment.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { SecretaryContextService } from '../../../core/services/secretary-context.service';
 import { AppointmentResponse, AppointmentStatus, APPOINTMENT_STATUS_LABELS } from '../../../core/models/appointment.model';
 import { formatLocalDateTime } from '../../../core/utils/date-utils';
 import { SyliSpinnerComponent } from '../../../shared/components/syli-spinner/syli-spinner.component';
@@ -21,14 +22,18 @@ type ListTab = 'upcoming' | 'past' | 'cancelled';
       <div class="flex items-center justify-between mb-6">
         <div>
           <h1 class="text-2xl font-bold text-gray-900">
-            {{ authService.isPatient() ? 'Mes rendez-vous' : 'Mon planning' }}
+            {{ authService.isPatient() ? 'Mes rendez-vous' : (authService.isSecretary() ? 'Planning praticien' : 'Mon planning') }}
           </h1>
           <p class="text-gray-500 mt-1">
-            {{ authService.isPatient() ? 'Gérez vos consultations' : 'Gérez vos rendez-vous patients' }}
+            @if (authService.isSecretary() && contextService.selectedPractitioner()) {
+              Dr. {{ contextService.selectedPractitioner()!.firstName }} {{ contextService.selectedPractitioner()!.lastName }}
+            } @else {
+              {{ authService.isPatient() ? 'Gérez vos consultations' : 'Gérez vos rendez-vous patients' }}
+            }
           </p>
         </div>
         <div class="flex items-center gap-3">
-          @if (authService.isPractitioner()) {
+          @if (isStaff()) {
             <a routerLink="/calendar"
                class="btn-secondary text-sm flex items-center gap-1.5">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -82,6 +87,14 @@ type ListTab = 'upcoming' | 'past' | 'cancelled';
 
       @if (loading()) {
         <app-syli-spinner size="md" [showLabel]="true" [centered]="true" />
+      } @else if (authService.isSecretary() && contextService.hasNoPractitionerAccess()) {
+        <div class="card text-center py-16">
+          <p class="text-gray-600 font-medium">Aucun praticien accessible</p>
+          <p class="text-sm text-gray-400 mt-2">
+            Vos accès ont peut-être été suspendus. Consultez vos notifications ou le tableau de bord.
+          </p>
+          <a routerLink="/dashboard/secretary" class="btn-primary mt-4 inline-block text-sm">Tableau de bord</a>
+        </div>
       } @else if (visibleAppointments().length === 0) {
         <div class="card text-center py-16">
           <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -186,7 +199,7 @@ type ListTab = 'upcoming' | 'past' | 'cancelled';
 
                 <!-- Actions selon rôle et statut -->
                 <div class="flex gap-2 flex-shrink-0 flex-wrap">
-                  @if (authService.isPractitioner() && appt.status === 'PENDING_PAYMENT_VALIDATION') {
+                  @if (isStaff() && appt.status === 'PENDING_PAYMENT_VALIDATION') {
                     <button (click)="validatePayment(appt.id)" [disabled]="actionLoading() === appt.id"
                             class="btn-success text-sm">
                       ✓ Valider paiement
@@ -197,7 +210,7 @@ type ListTab = 'upcoming' | 'past' | 'cancelled';
                     </button>
                   }
 
-                  @if (authService.isPractitioner() && appt.status === 'REQUESTED') {
+                  @if (isStaff() && appt.status === 'REQUESTED') {
                     <button (click)="openRefuse(appt.id)" [disabled]="actionLoading() === appt.id"
                             class="btn-danger text-sm">
                       Refuser
@@ -210,6 +223,8 @@ type ListTab = 'upcoming' | 'past' | 'cancelled';
                             class="btn-secondary text-sm">
                       Compte rendu
                     </button>
+                  }
+                  @if (isStaff() && appt.status === 'CONFIRMED') {
                     <button (click)="markCompleted(appt.id)" [disabled]="actionLoading() === appt.id"
                             class="btn-primary text-sm">
                       Marquer terminé
@@ -271,6 +286,7 @@ export class AppointmentListComponent implements OnInit {
 
   constructor(
     public authService: AuthService,
+    public contextService: SecretaryContextService,
     private appointmentService: AppointmentService,
     private router: Router
   ) {}
@@ -279,16 +295,32 @@ export class AppointmentListComponent implements OnInit {
     this.loadAppointments();
   }
 
+  isStaff(): boolean {
+    return this.authService.isPractitioner() || this.authService.isSecretary();
+  }
+
+  private staffPractitionerId(): number | undefined {
+    if (this.authService.isSecretary()) {
+      return this.contextService.selectedPractitionerId() ?? undefined;
+    }
+    return undefined;
+  }
+
   loadAppointments(): void {
+    const practitionerId = this.staffPractitionerId();
+    if (this.authService.isSecretary() && !practitionerId) {
+      this.loading.set(false);
+      return;
+    }
     this.loading.set(true);
-    this.appointmentService.getUpcoming().subscribe({
+    this.appointmentService.getUpcoming(practitionerId).subscribe({
       next: (data) => { this.upcoming.set(data); this.loading.set(false); },
       error: () => this.loading.set(false),
     });
-    this.appointmentService.getPast().subscribe({
+    this.appointmentService.getPast(practitionerId).subscribe({
       next: (data) => this.past.set(data),
     });
-    this.appointmentService.getCancelled().subscribe({
+    this.appointmentService.getCancelled(practitionerId).subscribe({
       next: (data) => this.cancelled.set(data),
     });
   }

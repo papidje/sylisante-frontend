@@ -1,6 +1,9 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { SecretaryContextService } from '../../../core/services/secretary-context.service';
+import { SecretaryAccessService } from '../../../core/services/secretary-access.service';
+import { SecretaryService } from '../../../core/services/secretary.service';
 import { PlanningAlertService } from '../../../core/services/planning-alert.service';
 import { ReportTransferService } from '../../../core/services/report-transfer.service';
 import { SupportService } from '../../../core/services/support.service';
@@ -95,8 +98,19 @@ import { canSendSupportMessage } from '../../../core/models/user.model';
                 }
                 <a routerLink="/profile" routerLinkActive="nav-active"
                    class="nav-link">Mon profil</a>
+                <a routerLink="/secretaries" routerLinkActive="nav-active"
+                   class="nav-link">Secrétaires</a>
                 <a routerLink="/contact-admin" routerLinkActive="nav-active"
                    class="nav-link">Mes demandes</a>
+              }
+
+              @if (authService.isSecretary()) {
+                <a routerLink="/dashboard/secretary" routerLinkActive="nav-active"
+                   class="nav-link">Tableau de bord</a>
+                <a routerLink="/appointments" routerLinkActive="nav-active"
+                   class="nav-link">Planning</a>
+                <a routerLink="/calendar" routerLinkActive="nav-active"
+                   class="nav-link">Calendrier</a>
               }
 
               @if (authService.isAdmin()) {
@@ -123,8 +137,23 @@ import { canSendSupportMessage } from '../../../core/models/user.model';
             </div>
           </div>
 
-          <!-- Droite : cloche + user + déconnexion -->
+          <!-- Droite : sélecteur praticien (secrétaire) + cloche + user -->
           <div class="flex items-center gap-3">
+            @if (authService.isSecretary() && contextService.practitioners().length > 0) {
+              <div class="hidden md:block">
+                <label class="sr-only">Praticien</label>
+                <select class="input-field text-sm py-1.5 pr-8 min-w-[180px]"
+                        [value]="contextService.selectedPractitionerId() ?? ''"
+                        (change)="onPractitionerChange($event)">
+                  @for (p of contextService.practitioners(); track p.practitionerId) {
+                    <option [value]="p.practitionerId">
+                      Dr. {{ p.firstName }} {{ p.lastName }}
+                    </option>
+                  }
+                </select>
+              </div>
+            }
+
             <app-notification-bell />
 
             <!-- Infos utilisateur -->
@@ -134,7 +163,15 @@ import { canSendSupportMessage } from '../../../core/models/user.model';
                 {{ authService.currentUser()?.firstName }} {{ authService.currentUser()?.lastName }}
               </p>
               <p class="text-xs text-slate-400 leading-tight">
-                {{ authService.isAdmin() ? 'Administrateur' : authService.isPractitioner() ? 'Praticien' : 'Patient' }}
+                @if (authService.isAdmin()) {
+                  Administrateur
+                } @else if (authService.isPractitioner()) {
+                  Praticien
+                } @else if (authService.isSecretary()) {
+                  Secrétaire
+                } @else {
+                  Patient
+                }
               </p>
             </div>
 
@@ -187,17 +224,28 @@ import { canSendSupportMessage } from '../../../core/models/user.model';
 export class NavbarComponent implements OnInit {
   alertCount = signal(0);
   transferPendingCount = signal(0);
+  pendingInvitationCount = signal(0);
   showSupportLink = signal(false);
 
   constructor(
     public authService: AuthService,
+    public contextService: SecretaryContextService,
     private planningAlertService: PlanningAlertService,
     private reportTransferService: ReportTransferService,
     private supportService: SupportService,
+    private secretaryService: SecretaryService,
+    private secretaryAccessService: SecretaryAccessService,
   ) {}
 
   ngOnInit(): void {
     this.loadSupportNavVisibility();
+
+    if (this.authService.isSecretary()) {
+      this.secretaryAccessService.refreshPractitioners().subscribe();
+      this.secretaryService.getPendingInvitations().subscribe({
+        next: (inv) => { if (inv.length > 0) this.pendingInvitationCount.set(inv.length); },
+      });
+    }
 
     if (this.authService.isPractitioner()) {
       this.planningAlertService.getUnresolvedCount().subscribe(res => {
@@ -207,6 +255,12 @@ export class NavbarComponent implements OnInit {
         this.transferPendingCount.set(res.pendingCount);
       });
     }
+  }
+
+  onPractitionerChange(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    this.contextService.setSelectedPractitionerId(Number(value));
+    this.secretaryAccessService.refreshPractitioners().subscribe();
   }
 
   private loadSupportNavVisibility(): void {

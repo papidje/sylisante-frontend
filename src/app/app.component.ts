@@ -5,6 +5,7 @@ import { NavbarComponent } from './shared/components/navbar/navbar.component';
 import { AccountStatusBannerComponent } from './shared/components/account-status-banner/account-status-banner.component';
 import { AuthService } from './core/services/auth.service';
 import { NotificationService } from './core/services/notification.service';
+import { SecretaryAccessService } from './core/services/secretary-access.service';
 
 @Component({
   selector: 'app-root',
@@ -24,6 +25,7 @@ export class AppComponent implements OnInit, OnDestroy {
   constructor(
     public authService: AuthService,
     private notificationService: NotificationService,
+    _secretaryAccessService: SecretaryAccessService,
   ) {}
 
   ngOnInit(): void {

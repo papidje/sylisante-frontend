@@ -15,7 +15,10 @@ export type NotificationType =
   | 'SUBSCRIPTION_EXPIRED'
   | 'SUBSCRIPTION_EXPIRING_SOON'
   | 'ADMIN_SUPPORT_REQUEST'
-  | 'PRACTITIONER_PENDING_VALIDATION';
+  | 'PRACTITIONER_PENDING_VALIDATION'
+  | 'SECRETARY_INVITATION'
+  | 'SECRETARY_ACCESS_SUSPENDED'
+  | 'SECRETARY_ACCESS_REACTIVATED';
 
 export interface NotificationDto {
   id: number;
@@ -53,6 +56,9 @@ export const NOTIFICATION_ICONS: Record<NotificationType, string> = {
   SUBSCRIPTION_EXPIRING_SOON: '⚠️',
   ADMIN_SUPPORT_REQUEST:  '💬',
   PRACTITIONER_PENDING_VALIDATION: '⏳',
+  SECRETARY_INVITATION: '📨',
+  SECRETARY_ACCESS_SUSPENDED: '🚫',
+  SECRETARY_ACCESS_REACTIVATED: '✅',
 };
 
 const USER_MESSAGING_NOTIFICATION_TYPES: NotificationType[] = [
@@ -81,6 +87,10 @@ export function notificationRoute(n: NotificationDto, isAdmin: boolean): string 
 
   if (!isAdmin && USER_MESSAGING_NOTIFICATION_TYPES.includes(n.type)) {
     return '/contact-admin';
+  }
+
+  if (n.referenceType === 'SECRETARY_RELATION') {
+    return '/dashboard/secretary';
   }
 
   if (!n.referenceId) return null;
