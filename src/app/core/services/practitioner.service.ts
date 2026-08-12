@@ -28,16 +28,34 @@ export class PractitionerService {
     return this.http.get<PractitionerProfileDto>(`/api/practitioners/patient/${userId}`);
   }
 
+  /** Profil public d'un praticien (staff : secrétaire, agenda). */
+  getPublicById(userId: number): Observable<PractitionerProfileDto> {
+    return this.http.get<PractitionerProfileDto>(`/api/practitioners/public/${userId}`);
+  }
+
   getSlots(practitionerId: number, date: string | null, specialtyId: number): Observable<DayScheduleResponse> {
     let params = new HttpParams().set('specialtyId', specialtyId);
     if (date) params = params.set('date', date);
     return this.http.get<DayScheduleResponse>(`/api/practitioners/patient/${practitionerId}/slots`, { params });
   }
 
+  /** Créneaux disponibles (endpoint public — praticien / secrétaire). */
+  getPublicSlots(practitionerId: number, date: string | null, specialtyId: number): Observable<DayScheduleResponse> {
+    let params = new HttpParams().set('specialtyId', specialtyId);
+    if (date) params = params.set('date', date);
+    return this.http.get<DayScheduleResponse>(`/api/practitioners/public/${practitionerId}/slots`, { params });
+  }
+
   getNextAvailableDate(practitionerId: number, specialtyId: number): Observable<{ nextDate: string }> {
     const params = new HttpParams().set('specialtyId', specialtyId);
     return this.http.get<{ nextDate: string }>(
       `/api/practitioners/patient/${practitionerId}/next-available-date`, { params });
+  }
+
+  getPublicNextAvailableDate(practitionerId: number, specialtyId: number): Observable<{ nextDate: string }> {
+    const params = new HttpParams().set('specialtyId', specialtyId);
+    return this.http.get<{ nextDate: string }>(
+      `/api/practitioners/public/${practitionerId}/next-available-date`, { params });
   }
 
   getMyProfile(): Observable<PractitionerProfileDto> {
