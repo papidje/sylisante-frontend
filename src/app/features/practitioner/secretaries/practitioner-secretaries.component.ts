@@ -1,6 +1,5 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { SecretaryService } from '../../../core/services/secretary.service';
 import {
@@ -12,7 +11,7 @@ import { SyliSpinnerComponent } from '../../../shared/components/syli-spinner/sy
 @Component({
   selector: 'app-practitioner-secretaries',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink, SyliSpinnerComponent],
+  imports: [ReactiveFormsModule, SyliSpinnerComponent],
   template: `
     <div class="max-w-4xl mx-auto px-4 py-8">
       <div class="mb-6 flex items-center justify-between flex-wrap gap-3">
@@ -20,7 +19,9 @@ import { SyliSpinnerComponent } from '../../../shared/components/syli-spinner/sy
           <h1 class="text-2xl font-bold text-gray-900">Mes secrétaires</h1>
           <p class="text-gray-500 mt-1">Invitez et gérez les secrétaires de votre cabinet</p>
         </div>
-        <a routerLink="/profile" class="btn-secondary text-sm">← Retour au profil</a>
+        <button type="button" (click)="openInviteModal()" class="btn-primary text-sm">
+          + Inviter
+        </button>
       </div>
 
       @if (successMessage()) {
@@ -33,22 +34,6 @@ import { SyliSpinnerComponent } from '../../../shared/components/syli-spinner/sy
           <p class="text-sm text-red-700">{{ errorMessage() }}</p>
         </div>
       }
-
-      <div class="card mb-6">
-        <h2 class="text-base font-semibold text-gray-900 mb-4">Inviter une secrétaire</h2>
-        <form [formGroup]="inviteForm" (ngSubmit)="onInvite()" class="flex flex-wrap gap-3 items-end">
-          <div class="flex-1 min-w-[220px]">
-            <label class="block text-sm font-medium text-gray-700 mb-1">Adresse email</label>
-            <input type="email" formControlName="email" class="input-field" placeholder="secretaire@email.com"/>
-          </div>
-          <button type="submit" [disabled]="inviting() || inviteForm.invalid" class="btn-primary">
-            @if (inviting()) {
-              <app-syli-spinner size="xs" class="mr-2 inline-block align-middle" />
-            }
-            Envoyer l'invitation
-          </button>
-        </form>
-      </div>
 
       @if (loading()) {
         <div class="flex justify-center py-12">
@@ -114,6 +99,72 @@ import { SyliSpinnerComponent } from '../../../shared/components/syli-spinner/sy
         </div>
       }
     </div>
+
+    @if (inviteModalOpen()) {
+      <div class="fixed inset-0 z-50 flex items-center justify-center p-4"
+           (click)="closeInviteModal()">
+        <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"></div>
+
+        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md border border-slate-100"
+             (click)="$event.stopPropagation()"
+             role="dialog"
+             aria-labelledby="invite-secretary-title"
+             aria-modal="true">
+
+          <div class="px-6 pt-6 pb-4 border-b border-slate-100">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <h2 id="invite-secretary-title" class="text-lg font-bold text-slate-900">
+                  Inviter une secrétaire
+                </h2>
+                <p class="text-sm text-slate-500 mt-1">
+                  Saisissez l'adresse email de la personne à inviter.
+                </p>
+              </div>
+              <button type="button" (click)="closeInviteModal()"
+                      class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                      aria-label="Fermer">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <form [formGroup]="inviteForm" (ngSubmit)="onInvite()" class="px-6 py-5 space-y-4">
+            @if (inviteErrorMessage()) {
+              <div class="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+                {{ inviteErrorMessage() }}
+              </div>
+            }
+
+            <div>
+              <label for="invite-email" class="block text-sm font-medium text-slate-700 mb-1">
+                Adresse email
+              </label>
+              <input id="invite-email" type="email" formControlName="email"
+                     class="input-field" placeholder="secretaire@email.com"
+                     autocomplete="email"/>
+              @if (inviteForm.get('email')?.invalid && inviteForm.get('email')?.touched) {
+                <p class="text-xs text-red-500 mt-1">Adresse email invalide</p>
+              }
+            </div>
+
+            <div class="flex gap-3 justify-end pt-2">
+              <button type="button" (click)="closeInviteModal()" class="btn-secondary">
+                Annuler
+              </button>
+              <button type="submit" [disabled]="inviting() || inviteForm.invalid" class="btn-primary">
+                @if (inviting()) {
+                  <app-syli-spinner size="xs" class="mr-2 inline-block align-middle" />
+                }
+                Envoyer l'invitation
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    }
   `,
 })
 export class PractitionerSecretariesComponent implements OnInit {
@@ -121,6 +172,8 @@ export class PractitionerSecretariesComponent implements OnInit {
   secretaries = signal<SecretaryRelation[]>([]);
   loading = signal(true);
   inviting = signal(false);
+  inviteModalOpen = signal(false);
+  inviteErrorMessage = signal('');
   actionLoading = signal<number | null>(null);
   successMessage = signal('');
   errorMessage = signal('');
@@ -153,6 +206,7 @@ export class PractitionerSecretariesComponent implements OnInit {
   onInvite(): void {
     if (this.inviteForm.invalid) return;
     this.inviting.set(true);
+    this.inviteErrorMessage.set('');
     this.errorMessage.set('');
     this.successMessage.set('');
     this.secretaryService.inviteSecretary({ email: this.inviteForm.value.email.trim() }).subscribe({
@@ -160,13 +214,27 @@ export class PractitionerSecretariesComponent implements OnInit {
         this.inviting.set(false);
         this.successMessage.set('Invitation envoyée avec succès.');
         this.inviteForm.reset();
+        this.closeInviteModal();
         this.loadSecretaries();
       },
       error: (err: HttpErrorResponse) => {
         this.inviting.set(false);
-        this.errorMessage.set(err.error?.detail || 'Impossible d\'envoyer l\'invitation.');
+        this.inviteErrorMessage.set(err.error?.detail || 'Impossible d\'envoyer l\'invitation.');
       },
     });
+  }
+
+  openInviteModal(): void {
+    this.inviteErrorMessage.set('');
+    this.inviteForm.reset();
+    this.inviteModalOpen.set(true);
+  }
+
+  closeInviteModal(): void {
+    if (this.inviting()) return;
+    this.inviteModalOpen.set(false);
+    this.inviteErrorMessage.set('');
+    this.inviteForm.reset();
   }
 
   suspend(relationId: number): void {

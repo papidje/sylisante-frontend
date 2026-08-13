@@ -136,6 +136,16 @@ export const routes: Routes = [
       ),
   },
 
+  // Profil Secrétaire
+  {
+    path: 'secretary-profile',
+    canActivate: [authGuard, accountAccessGuard, roleGuard('ROLE_SECRETARY')],
+    loadComponent: () =>
+      import('./features/profile/secretary-profile/secretary-profile.component').then(
+        m => m.SecretaryProfileComponent
+      ),
+  },
+
   // Mes secrétaires (Praticien)
   {
     path: 'secretaries',

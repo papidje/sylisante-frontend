@@ -160,6 +160,15 @@ export class AuthService {
     return '/dashboard/patient';
   }
 
+  /** Met à jour prénom/nom en session après édition du profil (navbar). */
+  updateProfileNames(firstName: string, lastName: string): void {
+    const user = this._currentUser();
+    if (!user) return;
+    const updated = { ...user, firstName, lastName };
+    localStorage.setItem(this.USER_KEY, JSON.stringify(updated));
+    this._currentUser.set(updated);
+  }
+
   getToken(): string | null {
     return localStorage.getItem(this.TOKEN_KEY);
   }

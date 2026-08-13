@@ -111,6 +111,8 @@ import { canSendSupportMessage } from '../../../core/models/user.model';
                    class="nav-link">Planning</a>
                 <a routerLink="/calendar" routerLinkActive="nav-active"
                    class="nav-link">Calendrier</a>
+                <a routerLink="/secretary-profile" routerLinkActive="nav-active"
+                   class="nav-link">Mon profil</a>
               }
 
               @if (authService.isAdmin()) {
