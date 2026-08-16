@@ -13,10 +13,8 @@ export const routes: Routes = [
   // Suppression : rm -rf features/chiropraxie-landing + retirer ce bloc.
   {
     path: 'chiropraxie',
-    loadComponent: () =>
-      import('./features/chiropraxie-landing/chiropraxie-landing.component').then(
-        m => m.ChiropraxieLandingComponent
-      ),
+    loadChildren: () =>
+      import('./features/chiropraxie-landing/chiropraxie.routes').then(m => m.CHIROPRAXIE_ROUTES),
   },
   {
     path: 'cabinet-nabe',

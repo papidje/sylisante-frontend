@@ -1,0 +1,47 @@
+<section class="cg-panel">
+  <p><strong>{{ site.practitioner.fullName }} chiropracteur</strong></p>
+  <p class="cg-address-lines">
+    @for (line of site.practitioner.addressLines; track line) {
+      <span>{{ line }}</span>
+    }
+  </p>
+  <p>{{ site.hoursSummary.weekdays }} — {{ site.hoursSummary.saturday }}</p>
+  <a class="cg-phone" [href]="'tel:' + site.practitioner.phoneTel">{{ site.practitioner.phone }}</a>
+
+  <h3 class="cg-h3 cg-contact-form-title">Écrire à Kadiatou Nabé</h3>
+  <form class="cg-form" [formGroup]="contactForm" (ngSubmit)="submitContact()" novalidate>
+    @if (contactSuccess()) {
+      <div class="cg-alert cg-alert-ok">{{ contactSuccess() }}</div>
+    }
+    @if (contactError()) {
+      <div class="cg-alert cg-alert-ko">{{ contactError() }}</div>
+    }
+    <div class="cg-form-row">
+      <label>Nom<input type="text" formControlName="lastName" [class.cg-invalid]="isInvalid('lastName')" /></label>
+      <label>Prénom<input type="text" formControlName="firstName" [class.cg-invalid]="isInvalid('firstName')" /></label>
+    </div>
+    <div class="cg-form-row">
+      <label>Email<input type="email" formControlName="email" [class.cg-invalid]="isInvalid('email')" /></label>
+      <label>Téléphone<input type="tel" formControlName="phone" /></label>
+    </div>
+    <label>Sujet<input type="text" formControlName="subject" /></label>
+    <label>Message<textarea formControlName="message" rows="5" [class.cg-invalid]="isInvalid('message')"></textarea></label>
+    <button type="submit" class="cg-btn cg-btn-dark" [disabled]="sending()">
+      {{ sending() ? 'Envoi…' : 'Envoyer' }}
+    </button>
+  </form>
+</section>
+
+<section class="cg-panel cg-panel-alt">
+  <h3 class="cg-h3">Horaires du cabinet</h3>
+  <table class="cg-hours-table">
+    <tbody>
+      @for (row of site.hours; track row.day) {
+        <tr>
+          <th>{{ row.day }}</th>
+          <td>{{ row.hours }}</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</section>

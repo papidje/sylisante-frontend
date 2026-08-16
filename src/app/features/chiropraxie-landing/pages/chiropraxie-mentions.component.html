@@ -1,0 +1,14 @@
+<section class="cg-panel">
+  <p>
+    En cas d'abus constaté, le visiteur doit contacter l'entreprise chargée d'héberger ce site via le
+    <a routerLink="/chiropraxie/prendre-rendez-vous-chiropracteur-thiais">formulaire de contact</a>.
+  </p>
+  <h3 class="cg-h3">Éditeur du site</h3>
+  <p>
+    <strong>{{ site.practitioner.fullName }}</strong> — Chiropracteur à Conakry<br />
+    {{ site.practitioner.address }}
+  </p>
+  <p>Téléphone : <a [href]="'tel:' + site.practitioner.phoneTel">{{ site.practitioner.phone }}</a></p>
+  <h3 class="cg-h3">Hébergement</h3>
+  <p>Ce site est hébergé dans le cadre de la plateforme SyliSanté / FriaSoft.</p>
+</section>

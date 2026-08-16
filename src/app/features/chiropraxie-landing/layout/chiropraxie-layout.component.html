@@ -1,0 +1,212 @@
+<div class="cg-page" [style.background-image]="'url(' + site.practitioner.pageBackground + ')'">
+  <div class="cg-boxed cg-shell">
+    <header class="cg-site-header">
+      <div class="cg-site-titles">
+        <p class="cg-site-name">Kadiatou Nabe</p>
+        <p class="cg-site-tagline">{{ site.practitioner.title }}</p>
+      </div>
+      <a routerLink="/chiropraxie" class="cg-logo-link">
+        <img [src]="site.practitioner.logoImage" alt="Kadiatou Nabé chiropracteur" class="cg-logo" loading="eager" />
+      </a>
+      <a class="cg-call-btn cg-mobile-only" [href]="'tel:' + site.practitioner.phoneTel">Appeler</a>
+    </header>
+
+    <nav class="cg-menu-bar">
+      <div class="cg-menu-inner">
+        <a
+          class="cg-menu-item"
+          routerLink="/chiropraxie"
+          routerLinkActive="cg-menu-active"
+          [routerLinkActiveOptions]="{ exact: true }"
+        >
+          Accueil
+        </a>
+
+        <div class="cg-menu-dropdown" [class.cg-dropdown-open]="openDropdown() === 'chiro'">
+          <button
+            type="button"
+            class="cg-menu-trigger"
+            [class.cg-menu-active]="isChiroSectionActive()"
+            (click)="toggleDropdown('chiro')"
+          >
+            La chiropraxie
+          </button>
+          <div class="cg-dropdown-panel">
+            @for (item of site.menuChiropraxie; track item.path) {
+              <a [routerLink]="[basePath, item.path]" routerLinkActive="cg-menu-active">{{ item.label }}</a>
+            }
+          </div>
+        </div>
+
+        <a
+          class="cg-menu-item"
+          [routerLink]="[basePath, site.menuPractitioner.path]"
+          routerLinkActive="cg-menu-active"
+        >
+          {{ site.menuPractitioner.label }}
+        </a>
+
+        <div class="cg-menu-dropdown" [class.cg-dropdown-open]="openDropdown() === 'infos'">
+          <button
+            type="button"
+            class="cg-menu-trigger"
+            [class.cg-menu-active]="isInfosSectionActive()"
+            (click)="toggleDropdown('infos')"
+          >
+            Infos pratiques
+          </button>
+          <div class="cg-dropdown-panel">
+            @for (item of site.menuInfos; track item.path) {
+              <a [routerLink]="[basePath, item.path]" routerLinkActive="cg-menu-active">{{ item.label }}</a>
+            }
+          </div>
+        </div>
+
+        <a
+          class="cg-menu-item"
+          [routerLink]="[basePath, site.menuTestimonials.path]"
+          routerLinkActive="cg-menu-active"
+        >
+          {{ site.menuTestimonials.label }}
+        </a>
+
+        <a
+          class="cg-menu-item"
+          [routerLink]="[basePath, site.menuContact.path]"
+          routerLinkActive="cg-menu-active"
+        >
+          {{ site.menuContact.label }}
+        </a>
+
+        <button type="button" class="cg-menu-mobile-toggle" (click)="toggleMobileMenu()" aria-label="Menu">
+          ☰
+        </button>
+      </div>
+
+      @if (mobileMenuOpen()) {
+        <div class="cg-mobile-menu">
+          <a routerLink="/chiropraxie" routerLinkActive="cg-menu-active" [routerLinkActiveOptions]="{ exact: true }">
+            Accueil
+          </a>
+          <div class="cg-mobile-submenu-label">La chiropraxie</div>
+          <div class="cg-mobile-submenu">
+            @for (item of site.menuChiropraxie; track item.path) {
+              <a [routerLink]="[basePath, item.path]" routerLinkActive="cg-menu-active">{{ item.label }}</a>
+            }
+          </div>
+          <a [routerLink]="[basePath, site.menuPractitioner.path]" routerLinkActive="cg-menu-active">
+            {{ site.menuPractitioner.label }}
+          </a>
+          <div class="cg-mobile-submenu-label">Infos pratiques</div>
+          <div class="cg-mobile-submenu">
+            @for (item of site.menuInfos; track item.path) {
+              <a [routerLink]="[basePath, item.path]" routerLinkActive="cg-menu-active">{{ item.label }}</a>
+            }
+          </div>
+          <a [routerLink]="[basePath, site.menuTestimonials.path]" routerLinkActive="cg-menu-active">
+            {{ site.menuTestimonials.label }}
+          </a>
+          <a [routerLink]="[basePath, site.menuContact.path]" routerLinkActive="cg-menu-active">
+            {{ site.menuContact.label }}
+          </a>
+        </div>
+      }
+    </nav>
+
+    @if (isHome()) {
+      <div class="cg-hero">
+        <img
+          class="cg-hero-bg"
+          [src]="site.practitioner.portraitImage"
+          alt="Kadiatou Nabé, chiropracteur à Conakry"
+          loading="eager"
+        />
+        <aside class="cg-hero-rdv">
+          <h2 class="cg-hero-rdv-title">Prendre rendez-vous</h2>
+          <p [innerHTML]="site.hoursSummary.weekdaysHtml"></p>
+          <p [innerHTML]="site.hoursSummary.saturdayHtml"></p>
+          <p class="cg-hero-address">
+            @for (line of site.practitioner.addressLines; track line) {
+              <span>{{ line }}</span>
+            }
+          </p>
+          <a class="cg-btn cg-btn-accent cg-btn-block" [routerLink]="[basePath, site.menuContact.path]">
+            Prendre rendez-vous
+          </a>
+        </aside>
+      </div>
+    } @else if (pageEyebrow()) {
+      <div
+        class="cg-page-banner"
+        [style.background-image]="pageBannerImage() ? 'url(' + pageBannerImage() + ')' : null"
+      >
+        <p class="cg-page-banner-label">{{ pageEyebrow() }}</p>
+      </div>
+    }
+
+    <main class="cg-main">
+      @if (pageTitle()) {
+        <div class="cg-page-h1">
+          <h1>{{ pageTitle() }}</h1>
+        </div>
+      }
+
+      <router-outlet />
+
+      <section class="cg-partners">
+        @for (p of site.partners; track p.url) {
+          <a [href]="p.url" target="_blank" rel="noopener noreferrer">
+            <img [src]="p.image" [alt]="p.label" loading="lazy" />
+          </a>
+        }
+      </section>
+    </main>
+  </div>
+
+  <footer class="cg-footer">
+    <div class="cg-boxed cg-footer-grid">
+      <div>
+        <h2 class="cg-footer-title">Kadiatou Nabe</h2>
+        <p>{{ home.footerBio }}</p>
+      </div>
+      <div>
+        <h2 class="cg-footer-title">Plan du site</h2>
+        <ul class="cg-footer-links">
+          @for (link of site.footerPlanLinks; track link.path) {
+            <li>
+              <a [routerLink]="link.path ? [basePath, link.path] : [basePath]">{{ link.label }}</a>
+            </li>
+          }
+        </ul>
+      </div>
+      <div>
+        <h2 class="cg-footer-title">La chiropraxie</h2>
+        <ul class="cg-footer-links">
+          @for (link of site.footerChiroLinks; track link.path) {
+            <li>
+              <a [routerLink]="[basePath, link.path]">{{ link.label }}</a>
+            </li>
+          }
+        </ul>
+      </div>
+      <div>
+        <h2 class="cg-footer-title">Contact</h2>
+        <p><strong>{{ site.practitioner.fullName }} chiropracteur</strong></p>
+        <p class="cg-footer-address">
+          @for (line of site.practitioner.addressLines; track line) {
+            <span>{{ line }}</span>
+          }
+        </p>
+        <a class="cg-footer-phone" [href]="'tel:' + site.practitioner.phoneTel">{{ site.practitioner.phone }}</a>
+      </div>
+    </div>
+    <div class="cg-boxed cg-footer-bottom">
+      <p>© {{ currentYear }} {{ site.practitioner.fullName }} — Chiropracteur à Conakry</p>
+      <p>
+        <a routerLink="/chiropraxie/mentions-legales">Mentions légales</a>
+        ·
+        <a routerLink="/chiropraxie/plan-du-site">Plan du site</a>
+      </p>
+    </div>
+  </footer>
+</div>

@@ -1,0 +1,87 @@
+<h1 class="cg-home-h1">{{ home.pageTitle }}</h1>
+
+<section class="cg-home-intro">
+  <p class="cg-home-lead">{{ home.introLead }}</p>
+  @for (p of home.introParagraphs; track p) {
+    <p>{{ p }}</p>
+  }
+</section>
+
+<section
+  class="cg-home-about"
+  [style.background-image]="'url(' + site.aboutBackground + ')'"
+>
+  <div class="cg-home-about-inner">
+    <h2 class="cg-h2-white cg-text-center">{{ home.about.heading }}</h2>
+    <p>{{ home.about.intro }}</p>
+    <ul class="cg-list-white">
+      @for (item of home.credentials; track item) {
+        <li>{{ item }}</li>
+      }
+    </ul>
+    <div class="cg-text-center">
+      <a class="cg-btn cg-btn-accent" [routerLink]="['/chiropraxie', home.about.morePath]">En savoir plus</a>
+    </div>
+  </div>
+</section>
+
+<section class="cg-home-explore">
+  <h2 class="cg-h2-gold cg-text-center">Qu'est-ce que la Chiropraxie ?</h2>
+  <div class="cg-explore-grid">
+    @for (card of site.exploreCards; track card.path) {
+      <div class="cg-explore-card-v2" [style.background-image]="'url(' + card.image + ')'">
+        <div class="cg-explore-card-inner">
+          <h3>{{ card.title }}</h3>
+          <a class="cg-btn cg-btn-dark cg-btn-sm" [routerLink]="['/chiropraxie', card.path]">En savoir plus</a>
+        </div>
+      </div>
+    }
+  </div>
+</section>
+
+<section class="cg-home-cabinet">
+  <h2 class="cg-h2-brown cg-text-center">{{ home.cabinetTeaser.title }}</h2>
+  <div class="cg-cabinet-triple">
+    <div class="cg-cabinet-box">
+      <h3 class="cg-h3-gold">Accéder au cabinet</h3>
+      <p><strong>{{ site.practitioner.fullName }} chiropracteur</strong></p>
+      <p class="cg-address-lines">
+        @for (line of site.practitioner.addressLines; track line) {
+          <span>{{ line }}</span>
+        }
+      </p>
+      <a
+        class="cg-btn cg-btn-accent cg-btn-block"
+        [href]="site.practitioner.mapUrl"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Localiser le cabinet sur une carte
+      </a>
+    </div>
+
+    <div class="cg-cabinet-box">
+      <h3 class="cg-h3-gold">Prendre rendez-vous</h3>
+      <p [innerHTML]="site.hoursSummary.weekdaysHtml"></p>
+      <p [innerHTML]="site.hoursSummary.saturdayHtml"></p>
+      <p class="cg-note">Pensez à prendre rendez-vous avec le cabinet avant de vous déplacer.</p>
+      <p><strong>{{ site.practitioner.fullName }} chiropracteur</strong></p>
+      <a class="cg-phone" [href]="'tel:' + site.practitioner.phoneTel">{{ site.practitioner.phone }}</a>
+      <a class="cg-btn cg-btn-accent cg-btn-block" routerLink="/chiropraxie/prendre-rendez-vous-chiropracteur-thiais">
+        Prendre rendez-vous
+      </a>
+    </div>
+
+    <div class="cg-cabinet-box">
+      <h3 class="cg-h3-gold">Informations pratiques</h3>
+      <ul class="cg-list">
+        @for (info of site.practicalInfo; track info) {
+          <li>{{ info }}</li>
+        }
+      </ul>
+      <a class="cg-btn cg-btn-accent cg-btn-block" [routerLink]="['/chiropraxie', home.cabinetTeaser.morePath]">
+        En savoir plus sur le cabinet
+      </a>
+    </div>
+  </div>
+</section>

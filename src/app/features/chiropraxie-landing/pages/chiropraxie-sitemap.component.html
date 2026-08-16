@@ -1,0 +1,9 @@
+<section class="cg-panel">
+  <ul class="cg-sitemap">
+    @for (link of site.sitemapLinks; track link.path) {
+      <li>
+        <a [routerLink]="link.path ? [basePath, link.path] : [basePath]">{{ link.label }}</a>
+      </li>
+    }
+  </ul>
+</section>

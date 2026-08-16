@@ -1,0 +1,38 @@
+@if (page) {
+  <section class="cg-panel" [attr.data-page]="page.slug">
+    @if (page.subtitle) {
+      <h2 class="cg-h2-brown">{{ page.subtitle }}</h2>
+    }
+
+    @if (page.contentImage) {
+      <div class="cg-page-columns">
+        <div class="cg-page-col-image">
+          <img [src]="page.contentImage" [alt]="page.title" loading="lazy" />
+        </div>
+        <div class="cg-page-col-text">
+          <app-chiropraxie-blocks [blocks]="page.blocks" />
+        </div>
+      </div>
+    } @else {
+      <app-chiropraxie-blocks [blocks]="page.blocks" />
+    }
+
+    @if (page.videos?.length) {
+      @for (video of page.videos; track video.youtubeId) {
+        <h2 class="cg-h2-brown cg-video-section-title">{{ video.title }}</h2>
+        <div class="cg-video-wrap">
+          <iframe
+            [src]="youtubeEmbedUrl(video.youtubeId)"
+            [title]="video.title"
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen
+          ></iframe>
+        </div>
+        @if (video.caption) {
+          <h3 class="cg-h3 cg-text-center">{{ video.caption }}</h3>
+        }
+      }
+    }
+  </section>
+}

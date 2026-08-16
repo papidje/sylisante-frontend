@@ -1,0 +1,58 @@
+@for (block of blocks; track $index) {
+  @switch (block.kind) {
+    @case ('p') {
+      <p>{{ block.text }}</p>
+    }
+    @case ('h3') {
+      <h3 class="cg-h3">{{ block.text }}</h3>
+    }
+    @case ('ul') {
+      <ul class="cg-list">
+        @for (item of block.items; track item) {
+          <li>{{ item }}</li>
+        }
+      </ul>
+    }
+    @case ('hours') {
+      <table class="cg-hours-table">
+        <tbody>
+          @for (row of site.hours; track row.day) {
+            <tr>
+              <th>{{ row.day }}</th>
+              <td>{{ row.hours }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+    @case ('partners') {
+      <div class="cg-partners cg-partners-inline">
+        @for (p of site.partners; track p.url) {
+          <a [href]="p.url" target="_blank" rel="noopener noreferrer">
+            <img [src]="p.image" [alt]="p.label" loading="lazy" />
+          </a>
+        }
+      </div>
+    }
+    @case ('external') {
+      <p>
+        <a [href]="block.url" target="_blank" rel="noopener noreferrer">{{ block.label }}</a>
+      </p>
+    }
+    @case ('map') {
+      <div class="cg-map-box">
+        <p><strong>{{ site.practitioner.fullName }} chiropracteur</strong></p>
+        <p>{{ site.practitioner.address }}</p>
+        <a
+          class="cg-btn cg-btn-accent cg-btn-block"
+          [href]="site.practitioner.mapUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Localiser le cabinet sur une carte
+        </a>
+        <p class="cg-note">Pensez à prendre rendez-vous avec le cabinet avant de vous déplacer.</p>
+      </div>
+    }
+  }
+}
