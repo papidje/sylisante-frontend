@@ -1,0 +1,195 @@
+<div class="cg-page">
+  <header class="cg-header">
+    <div class="cg-container cg-header-inner">
+      <a class="cg-brand" href="#accueil" (click)="scrollTo('accueil'); $event.preventDefault()">
+        <img [src]="site.practitioner.logoImage" alt="Kadiatou Nabé chiropracteur" class="cg-brand-logo" loading="eager" />
+        <div>
+          <strong>{{ site.practitioner.fullName }}</strong>
+          <span>{{ site.practitioner.title }}</span>
+        </div>
+      </a>
+      <nav class="cg-nav" aria-label="Navigation principale">
+        <a href="#chiropraxie" (click)="scrollTo('chiropraxie'); $event.preventDefault()">La chiropraxie</a>
+        <a href="#patients" (click)="scrollTo('patients'); $event.preventDefault()">Patients</a>
+        <a href="#symptomes" (click)="scrollTo('symptomes'); $event.preventDefault()">Symptômes</a>
+        <a href="#cabinet" (click)="scrollTo('cabinet'); $event.preventDefault()">Infos pratiques</a>
+        <a href="#contact" class="cg-nav-cta" (click)="scrollTo('contact'); $event.preventDefault()">Contact</a>
+      </nav>
+      <a class="cg-phone-btn" [href]="'tel:' + site.practitioner.phoneTel">Appeler</a>
+    </div>
+  </header>
+
+  <section id="accueil" class="cg-hero">
+    <img [src]="site.practitioner.heroImage" alt="" class="cg-hero-bg" loading="eager" />
+    <div class="cg-hero-overlay"></div>
+    <div class="cg-container cg-hero-content">
+      <p class="cg-eyebrow">Chiropracteur à Conakry</p>
+      <h1>{{ site.practitioner.fullName }}, chiropracteur à Conakry</h1>
+      <p class="cg-lead">{{ site.intro }}</p>
+      <p class="cg-lead cg-lead-muted">{{ site.chiropraxieDefinition }}</p>
+      <div class="cg-hero-actions">
+        <button type="button" class="cg-btn cg-btn-primary" (click)="scrollTo('contact')">Prendre rendez-vous</button>
+        <a class="cg-btn cg-btn-outline" [href]="'tel:' + site.practitioner.phoneTel">{{ site.practitioner.phone }}</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="praticienne" class="cg-section cg-section-alt">
+    <div class="cg-container cg-two-col">
+      <div>
+        <h2>Votre chiropracteur à Conakry</h2>
+        <p>Située à Conakry, {{ site.practitioner.fullName }} est un chiropracteur de confiance :</p>
+        <ul class="cg-check-list">
+          @for (item of site.credentials; track item) {
+            <li>{{ item }}</li>
+          }
+        </ul>
+        <p>Le chiropracteur protège et répare votre dos et vos articulations tout au long de votre vie.</p>
+      </div>
+      <div class="cg-tag-cloud">
+        @for (tag of site.treatedConditions; track tag) {
+          <span class="cg-tag">{{ tag }}</span>
+        }
+      </div>
+    </div>
+  </section>
+
+  <section id="chiropraxie" class="cg-section">
+    <div class="cg-container cg-narrow">
+      <h2>{{ site.presentation.title }}</h2>
+      @for (p of site.presentation.paragraphs; track p) {
+        <p>{{ p }}</p>
+      }
+    </div>
+  </section>
+
+  <section id="patients" class="cg-section cg-section-alt">
+    <div class="cg-container">
+      <h2>Les patients de la chiropraxie</h2>
+      <p class="cg-section-intro">La chiropraxie est indiquée pour tous, sans distinction d'âge.</p>
+      <div class="cg-cards">
+        @for (patient of site.patients; track patient.title) {
+          <article class="cg-card">
+            <h3>{{ patient.title }}</h3>
+            <p>{{ patient.text }}</p>
+          </article>
+        }
+      </div>
+    </div>
+  </section>
+
+  <section id="symptomes" class="cg-section">
+    <div class="cg-container">
+      <h2>Symptômes et douleurs traités</h2>
+      <p class="cg-section-intro">Prévention, maintien en forme, rééducation ou traitement de la douleur.</p>
+      <div class="cg-symptom-grid">
+        <article class="cg-card">
+          <h3>Douleurs articulaires</h3>
+          <ul>
+            @for (s of site.symptoms.peripheral; track s) { <li>{{ s }}</li> }
+          </ul>
+        </article>
+        <article class="cg-card">
+          <h3>Mal de dos</h3>
+          <ul>
+            @for (s of site.symptoms.spinal; track s) { <li>{{ s }}</li> }
+          </ul>
+        </article>
+        <article class="cg-card">
+          <h3>Douleurs globales</h3>
+          <ul>
+            @for (s of site.symptoms.global; track s) { <li>{{ s }}</li> }
+          </ul>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section id="cabinet" class="cg-section cg-section-alt">
+    <div class="cg-container cg-two-col">
+      <div>
+        <h2>Votre cabinet chiropratique à Conakry</h2>
+        <h3 class="cg-subtitle">Informations pratiques</h3>
+        <ul class="cg-check-list">
+          @for (info of site.practicalInfo; track info) {
+            <li>{{ info }}</li>
+          }
+        </ul>
+        <h3 class="cg-subtitle">Horaires</h3>
+        <table class="cg-hours">
+          <tbody>
+            @for (row of site.hours; track row.day) {
+              <tr>
+                <th>{{ row.day }}</th>
+                <td>{{ row.hours }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="cg-location-card">
+        <h3>Accéder au cabinet</h3>
+        <p><strong>{{ site.practitioner.fullName }}</strong></p>
+        <p>{{ site.practitioner.address }}<br>{{ site.practitioner.city }}</p>
+        <p class="cg-phone">{{ site.practitioner.phone }}</p>
+        <a class="cg-btn cg-btn-primary cg-btn-block" [href]="site.practitioner.mapUrl" target="_blank" rel="noopener noreferrer">
+          Localiser le cabinet sur une carte
+        </a>
+        <p class="cg-note">Pensez à prendre rendez-vous avant de vous déplacer.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="contact" class="cg-section">
+    <div class="cg-container cg-contact-grid">
+      <div>
+        <h2>Écrire à {{ site.practitioner.fullName }}</h2>
+        <p>Du lundi au vendredi de 8h à 17h — le samedi de 8h à 12h.</p>
+        <p>{{ site.practitioner.address }}, {{ site.practitioner.city }}</p>
+        <a class="cg-phone-link" [href]="'tel:' + site.practitioner.phoneTel">{{ site.practitioner.phone }}</a>
+      </div>
+
+      <form class="cg-form" [formGroup]="contactForm" (ngSubmit)="submitContact()" novalidate>
+        @if (contactSuccess()) {
+          <div class="cg-alert cg-alert-success">{{ contactSuccess() }}</div>
+        }
+        @if (contactError()) {
+          <div class="cg-alert cg-alert-error">{{ contactError() }}</div>
+        }
+
+        <label class="cg-field">
+          <span>Nom complet *</span>
+          <input type="text" formControlName="name" placeholder="Votre nom" [class.cg-invalid]="isInvalid('name')" />
+          @if (isInvalid('name')) { <em class="cg-error">Nom obligatoire</em> }
+        </label>
+
+        <label class="cg-field">
+          <span>Email ou téléphone *</span>
+          <input type="text" formControlName="contact" placeholder="email@exemple.com ou +224…" [class.cg-invalid]="isInvalid('contact')" />
+          @if (isInvalid('contact')) { <em class="cg-error">Contact obligatoire</em> }
+        </label>
+
+        <label class="cg-field">
+          <span>Message *</span>
+          <textarea formControlName="message" rows="5" placeholder="Votre message…" [class.cg-invalid]="isInvalid('message')"></textarea>
+          @if (isInvalid('message')) { <em class="cg-error">Message obligatoire</em> }
+        </label>
+
+        <button type="submit" class="cg-btn cg-btn-primary cg-btn-block" [disabled]="sending()">
+          {{ sending() ? 'Envoi en cours…' : 'Envoyer' }}
+        </button>
+      </form>
+    </div>
+  </section>
+
+  <footer class="cg-footer">
+    <div class="cg-container cg-footer-inner">
+      <p>© {{ currentYear }} {{ site.practitioner.fullName }} — Chiropracteur à Conakry</p>
+      <div class="cg-footer-links">
+        @for (p of site.partners; track p.url) {
+          <a [href]="p.url" target="_blank" rel="noopener noreferrer">{{ p.label }}</a>
+        }
+      </div>
+    </div>
+  </footer>
+</div>

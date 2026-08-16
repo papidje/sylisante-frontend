@@ -9,6 +9,22 @@ import { secretaryAccessGuard } from './core/guards/secretary-access.guard';
 export const routes: Routes = [
   { path: '', redirectTo: '/auth/login', pathMatch: 'full' },
 
+  // ── LEGACY TEMPORAIRE : vitrine chiropraxie-guinee.fr ─────────────────────
+  // Suppression : rm -rf features/chiropraxie-landing + retirer ce bloc.
+  {
+    path: 'chiropraxie',
+    loadComponent: () =>
+      import('./features/chiropraxie-landing/chiropraxie-landing.component').then(
+        m => m.ChiropraxieLandingComponent
+      ),
+  },
+  {
+    path: 'cabinet-nabe',
+    redirectTo: 'chiropraxie',
+    pathMatch: 'full',
+  },
+  // ─────────────────────────────────────────────────────────────────────────
+
   // Auth (invités seulement)
   {
     path: 'auth',
