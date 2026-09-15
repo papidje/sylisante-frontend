@@ -5,6 +5,13 @@ import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } 
 import { HttpErrorResponse } from '@angular/common/http';
 import { ConsultationReportService, ConsultationReportDto } from '../../../core/services/consultation-report.service';
 import { AppointmentService } from '../../../core/services/appointment.service';
+import { ClinicalProfileService } from '../../../core/services/clinical-profile.service';
+import {
+  BloodType,
+  BLOOD_TYPE_LABELS,
+  BLOOD_TYPE_OPTIONS,
+  ClinicalProfileDto,
+} from '../../../core/models/clinical-profile.model';
 import { AppointmentResponse, APPOINTMENT_STATUS_LABELS } from '../../../core/models/appointment.model';
 import { formatLocalDateTime, parseLocalDateTime } from '../../../core/utils/date-utils';
 import { SyliSpinnerComponent } from '../../../shared/components/syli-spinner/syli-spinner.component';
@@ -156,6 +163,45 @@ type ViewMode = 'list' | 'patient-history' | 'new-report';
             <button (click)="setView('list')" class="btn-secondary text-sm py-1.5">← Retour</button>
           </div>
 
+          @if (clinical()) {
+            <div class="card mb-6 border border-amber-100 bg-amber-50/40">
+              <p class="text-xs font-semibold uppercase tracking-wide text-amber-800 mb-3">Faits patient</p>
+              <div class="grid sm:grid-cols-3 gap-3 text-sm mb-4">
+                <div>
+                  <p class="text-xs text-slate-500">Groupe sanguin</p>
+                  <p class="font-semibold text-slate-900">{{ clinical()!.bloodTypeLabel || '—' }}</p>
+                </div>
+                <div>
+                  <p class="text-xs text-slate-500">NIN</p>
+                  <p class="font-semibold text-slate-900">{{ clinical()!.nationalIdMasked || '—' }}</p>
+                </div>
+                <div>
+                  <p class="text-xs text-slate-500">Allergies</p>
+                  <p class="font-semibold text-red-700">
+                    {{ allergySummary() }}
+                  </p>
+                </div>
+              </div>
+              <div class="flex flex-col sm:flex-row gap-3">
+                <select class="input text-sm" [(ngModel)]="bloodTypeDraft" (change)="saveBloodType()">
+                  <option value="">Groupe sanguin…</option>
+                  @for (t of bloodTypes; track t) {
+                    <option [value]="t">{{ bloodLabels[t] }}</option>
+                  }
+                </select>
+                <div class="flex gap-2 flex-1">
+                  <input class="input text-sm flex-1" [(ngModel)]="allergyDraft" placeholder="Ajouter une allergie"/>
+                  <button type="button" class="btn-secondary text-sm" (click)="addAllergy()" [disabled]="!allergyDraft.trim()">
+                    Ajouter
+                  </button>
+                </div>
+              </div>
+              @if (clinicalError()) {
+                <p class="text-xs text-red-600 mt-2">{{ clinicalError() }}</p>
+              }
+            </div>
+          }
+
           @if (loadingPatientHistory()) {
             <app-syli-spinner size="sm" [showLabel]="true" [centered]="true" />
           } @else if (patientReports().length === 0) {
@@ -184,7 +230,18 @@ type ViewMode = 'list' | 'patient-history' | 'new-report';
                           </p>
                         </div>
                         @if (editingReportId() !== report.id) {
-                          <button (click)="startEdit(report)"
+                          <div class="flex items-center gap-2 flex-shrink-0">
+                            <span class="text-xs px-2 py-0.5 rounded-full font-medium"
+                                  [class.bg-emerald-50]="report.visibleToPatient"
+                                  [class.text-emerald-700]="report.visibleToPatient"
+                                  [class.border]="true"
+                                  [class.border-emerald-200]="report.visibleToPatient"
+                                  [class.bg-slate-50]="!report.visibleToPatient"
+                                  [class.text-slate-500]="!report.visibleToPatient"
+                                  [class.border-slate-200]="!report.visibleToPatient">
+                              {{ report.visibleToPatient ? 'Visible patient' : 'Notes internes' }}
+                            </span>
+                            <button (click)="startEdit(report)"
                                   class="text-xs text-primary-600 font-medium hover:text-primary-700
                                          flex items-center gap-1 flex-shrink-0">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -193,6 +250,7 @@ type ViewMode = 'list' | 'patient-history' | 'new-report';
                             </svg>
                             Modifier
                           </button>
+                          </div>
                         }
                       </div>
 
@@ -203,6 +261,10 @@ type ViewMode = 'list' | 'patient-history' | 'new-report';
                                   class="input-field resize-y w-full min-h-[160px] text-sm"
                                   placeholder="Contenu du compte rendu..."></textarea>
                         <div class="flex items-center gap-2 mt-3">
+                          <label class="flex items-center gap-2 text-xs text-slate-600 mr-auto cursor-pointer">
+                            <input type="checkbox" [(ngModel)]="editVisibleToPatient" class="rounded border-slate-300"/>
+                            Visible par le patient
+                          </label>
                           <button (click)="saveEdit(report.id)"
                                   [disabled]="editContent.trim().length < 10 || savingEdit()"
                                   class="btn-success text-sm px-4 py-1.5">
@@ -306,6 +368,16 @@ type ViewMode = 'list' | 'patient-history' | 'new-report';
                     {{ (reportForm.get('content')?.value || '').length }} / 10 000
                   </span>
                 </div>
+                <label class="mt-4 flex items-start gap-2 text-sm text-slate-700 cursor-pointer">
+                  <input type="checkbox" formControlName="visibleToPatient"
+                         class="mt-0.5 rounded border-slate-300"/>
+                  <span>
+                    <span class="font-medium">Visible par le patient</span>
+                    <span class="block text-xs text-slate-500">
+                      Sans cette case, le compte rendu reste interne (notes du médecin).
+                    </span>
+                  </span>
+                </label>
                 <button type="submit" [disabled]="reportForm.invalid || saving()" class="btn-success w-full mt-4">
                   @if (saving()) { Enregistrement... } @else { Enregistrer le compte rendu }
                 </button>
@@ -333,7 +405,14 @@ export class ConsultationReportsComponent implements OnInit {
   // Édition inline
   editingReportId = signal<number | null>(null);
   editContent = '';
+  editVisibleToPatient = false;
   savingEdit = signal(false);
+  clinical = signal<ClinicalProfileDto | null>(null);
+  clinicalError = signal('');
+  bloodTypeDraft = '';
+  allergyDraft = '';
+  readonly bloodTypes = BLOOD_TYPE_OPTIONS;
+  readonly bloodLabels = BLOOD_TYPE_LABELS;
 
   // Nouveau compte rendu
   eligibleAppointments = signal<AppointmentResponse[]>([]);
@@ -383,10 +462,12 @@ export class ConsultationReportsComponent implements OnInit {
     private fb: FormBuilder,
     private route: ActivatedRoute,
     private reportService: ConsultationReportService,
-    private appointmentService: AppointmentService
+    private appointmentService: AppointmentService,
+    private clinicalProfileService: ClinicalProfileService
   ) {
     this.reportForm = this.fb.group({
       content: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(10000)]],
+      visibleToPatient: [false],
     });
   }
 
@@ -432,17 +513,26 @@ export class ConsultationReportsComponent implements OnInit {
       },
       error: () => this.loadingPatientHistory.set(false),
     });
+    this.clinical.set(null);
+    this.clinicalProfileService.getForPatient(patientId).subscribe({
+      next: (c) => {
+        this.clinical.set(c);
+        this.bloodTypeDraft = c.bloodType ?? '';
+      },
+      error: () => this.clinical.set(null),
+    });
   }
 
   selectAppointment(appt: AppointmentResponse): void {
     this.selectedAppointment.set(appt);
-    this.reportForm.reset({ content: '' });
+    this.reportForm.reset({ content: '', visibleToPatient: false });
     this.errorMessage.set('');
   }
 
   startEdit(report: ConsultationReportDto): void {
     this.editingReportId.set(report.id);
     this.editContent = report.content;
+    this.editVisibleToPatient = report.visibleToPatient;
     this.errorMessage.set('');
   }
 
@@ -454,7 +544,7 @@ export class ConsultationReportsComponent implements OnInit {
   saveEdit(reportId: number): void {
     if (this.editContent.trim().length < 10 || this.savingEdit()) return;
     this.savingEdit.set(true);
-    this.reportService.updateReport(reportId, this.editContent.trim()).subscribe({
+    this.reportService.updateReport(reportId, this.editContent.trim(), this.editVisibleToPatient).subscribe({
       next: (updated) => {
         // Mettre à jour dans la liste globale et dans l'historique patient
         this.reports.update(list =>
@@ -485,13 +575,14 @@ export class ConsultationReportsComponent implements OnInit {
     this.reportService.createReport({
       appointmentId: appt.id,
       content: this.reportForm.value.content,
+      visibleToPatient: !!this.reportForm.value.visibleToPatient,
     }).subscribe({
       next: (created) => {
         this.saving.set(false);
         this.reports.update(list => [created, ...list]);
         // Retirer le RDV de la liste des éligibles (il a maintenant un rapport)
         this.eligibleAppointments.update(list => list.filter(a => a.id !== appt.id));
-        this.reportForm.reset({ content: '' });
+        this.reportForm.reset({ content: '', visibleToPatient: false });
         this.selectedAppointment.set(null);
         this.successMessage.set('Compte rendu enregistré.');
         this.setView('list');
@@ -536,5 +627,45 @@ export class ConsultationReportsComponent implements OnInit {
 
   formatDate(d: string): string {
     return formatLocalDateTime(d);
+  }
+
+  allergySummary(): string {
+    const allergies = this.clinical()?.allergies ?? [];
+    return allergies.length ? allergies.map(a => a.substance).join(', ') : 'Aucune';
+  }
+
+  saveBloodType(): void {
+    const patientId = this.selectedPatientId();
+    const next = this.bloodTypeDraft as BloodType | '';
+    const current = this.clinical()?.bloodType ?? '';
+    if (!patientId || !next || next === current) {
+      return;
+    }
+    this.clinicalError.set('');
+    this.clinicalProfileService.updateForPatient(patientId, { bloodType: next }).subscribe({
+      next: (c) => this.clinical.set(c),
+      error: (err: HttpErrorResponse) => {
+        this.clinicalError.set(err.error?.detail || 'Impossible d\'enregistrer le groupe sanguin.');
+        this.bloodTypeDraft = current;
+      },
+    });
+  }
+
+  addAllergy(): void {
+    const patientId = this.selectedPatientId();
+    const substance = this.allergyDraft.trim();
+    if (!patientId || substance.length < 2) {
+      return;
+    }
+    this.clinicalError.set('');
+    this.clinicalProfileService.addAllergyForPatient(patientId, { substance }).subscribe({
+      next: (created) => {
+        this.clinical.update(c => c ? { ...c, allergies: [created, ...c.allergies] } : c);
+        this.allergyDraft = '';
+      },
+      error: (err: HttpErrorResponse) => {
+        this.clinicalError.set(err.error?.detail || 'Impossible d\'ajouter l\'allergie.');
+      },
+    });
   }
 }

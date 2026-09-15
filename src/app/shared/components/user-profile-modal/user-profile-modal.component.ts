@@ -174,8 +174,19 @@ export class UserProfileModalComponent implements OnChanges {
       { label: 'Adresse', value: p.address },
       { label: 'Date de naissance', value: p.birthDate ? formatLocalDate(p.birthDate) : null },
       { label: 'Sexe', value: p.gender ? (GENDER_LABELS[p.gender] ?? p.gender) : null },
-      { label: 'Notes médicales / allergies', value: p.description },
+      { label: 'Groupe sanguin', value: p.clinicalProfile?.bloodTypeLabel ?? null },
+      { label: 'NIN', value: p.clinicalProfile?.nationalIdMasked ?? null },
+      { label: 'Allergies', value: this.allergyNames(p) },
+      { label: 'Notes médicales', value: p.description },
     ];
+  }
+
+  private allergyNames(p: PatientProfileViewDto): string | null {
+    const allergies = p.clinicalProfile?.allergies;
+    if (!allergies?.length) {
+      return null;
+    }
+    return allergies.map(a => a.substance).join(', ');
   }
 
   adminRows(): { label: string; value: string | null }[] {

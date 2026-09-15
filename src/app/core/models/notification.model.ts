@@ -10,6 +10,7 @@ export type NotificationType =
   | 'TRANSFER_APPROVED'
   | 'TRANSFER_REJECTED'
   | 'TRANSFER_RECEIVED'
+  | 'CONSULTATION_REPORT_SHARED'
   | 'ACCOUNT_SUSPENDED'
   | 'ACCOUNT_ACTIVATED'
   | 'SUBSCRIPTION_EXPIRED'
@@ -50,6 +51,7 @@ export const NOTIFICATION_ICONS: Record<NotificationType, string> = {
   TRANSFER_APPROVED:      '🔓',
   TRANSFER_REJECTED:      '🔒',
   TRANSFER_RECEIVED:      '📥',
+  CONSULTATION_REPORT_SHARED: '📋',
   ACCOUNT_SUSPENDED:      '🚫',
   ACCOUNT_ACTIVATED:      '🎉',
   SUBSCRIPTION_EXPIRED:   '⏳',
@@ -101,5 +103,6 @@ export function notificationRoute(n: NotificationDto, isAdmin: boolean): string 
     if (n.type === 'TRANSFER_APPROVED' || n.type === 'TRANSFER_REJECTED') return '/my-transfers';
     return '/my-transfers';
   }
+  if (n.referenceType === 'CONSULTATION_REPORT') return '/dossier';
   return null;
 }

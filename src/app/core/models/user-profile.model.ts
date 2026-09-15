@@ -36,6 +36,8 @@ export const GENDER_LABELS: Record<string, string> = {
   OTHER: 'Autre',
 };
 
+import { ClinicalProfileDto } from './clinical-profile.model';
+
 /** Fiche patient consultable par un praticien. */
 export interface PatientProfileViewDto {
   id: number;
@@ -47,4 +49,5 @@ export interface PatientProfileViewDto {
   birthDate: string | null;
   gender: string | null;
   description: string | null;
+  clinicalProfile: ClinicalProfileDto | null;
 }

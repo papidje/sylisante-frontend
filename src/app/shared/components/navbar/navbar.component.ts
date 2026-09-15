@@ -47,6 +47,8 @@ import { canSendSupportMessage } from '../../../core/models/user.model';
                    class="nav-link">Tableau de bord</a>
                 <a routerLink="/appointments" routerLinkActive="nav-active"
                    class="nav-link">Mes RDV</a>
+                <a routerLink="/dossier" routerLinkActive="nav-active"
+                   class="nav-link">Mon dossier</a>
                 <a routerLink="/appointments/book" routerLinkActive="nav-active"
                    class="nav-link">+ Nouveau RDV</a>
                 <a routerLink="/my-transfers" routerLinkActive="nav-active"

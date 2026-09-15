@@ -1,9 +1,16 @@
 import { Component, OnInit, signal } from '@angular/core';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { FormsModule, FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { UserProfileService } from '../../../core/services/user-profile.service';
+import { ClinicalProfileService } from '../../../core/services/clinical-profile.service';
 import { UserProfileDto, GENDER_LABELS } from '../../../core/models/user-profile.model';
+import {
+  BloodType,
+  BLOOD_TYPE_LABELS,
+  BLOOD_TYPE_OPTIONS,
+  ClinicalProfileDto,
+} from '../../../core/models/clinical-profile.model';
 import { formatLocalDateTime } from '../../../core/utils/date-utils';
 import { ChangePasswordModalComponent } from '../../../shared/components/change-password-modal/change-password-modal.component';
 import { SyliSpinnerComponent } from '../../../shared/components/syli-spinner/syli-spinner.component';
@@ -11,7 +18,7 @@ import { SyliSpinnerComponent } from '../../../shared/components/syli-spinner/sy
 @Component({
   selector: 'app-patient-profile',
   standalone: true,
-  imports: [  CommonModule, ReactiveFormsModule, RouterLink, ChangePasswordModalComponent, SyliSpinnerComponent],
+  imports: [  CommonModule, FormsModule, ReactiveFormsModule, RouterLink, ChangePasswordModalComponent, SyliSpinnerComponent],
   template: `
     <div class="max-w-2xl mx-auto px-4 py-8">
 
@@ -87,6 +94,77 @@ import { SyliSpinnerComponent } from '../../../shared/components/syli-spinner/sy
               <p class="text-gray-800">{{ profile()!.createdAt | date:'dd/MM/yyyy' }}</p>
             </div>
           </div>
+        </div>
+      }
+
+      @if (!loading() && profile()) {
+        <div class="card mt-6 space-y-5">
+          <div>
+            <h2 class="text-base font-semibold text-slate-900">Dossier clinique</h2>
+            <p class="text-sm text-slate-500 mt-1">
+              Groupe sanguin, identifiant national et allergies. Visibles par vos praticiens lors d'un rendez-vous.
+            </p>
+          </div>
+          @if (clinical()) {
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+              <div>
+                <p class="text-gray-400 font-medium uppercase tracking-wide text-xs mb-1">Groupe sanguin</p>
+                <p class="text-gray-800">{{ clinical()!.bloodTypeLabel || '—' }}</p>
+                @if (clinical()!.bloodTypeLocked) {
+                  <p class="text-xs text-amber-700 mt-1">Enregistré par un praticien — non modifiable ici.</p>
+                }
+              </div>
+              <div>
+                <p class="text-gray-400 font-medium uppercase tracking-wide text-xs mb-1">NIN</p>
+                <p class="text-gray-800">{{ clinical()!.nationalId || '—' }}</p>
+              </div>
+              <div class="sm:col-span-2">
+                <p class="text-gray-400 font-medium uppercase tracking-wide text-xs mb-2">Allergies</p>
+                @if (clinical()!.allergies.length === 0) {
+                  <p class="text-gray-800">Aucune allergie déclarée</p>
+                } @else {
+                  <div class="flex flex-wrap gap-2">
+                    @for (a of clinical()!.allergies; track a.id) {
+                      <span class="inline-flex items-center gap-1.5 text-xs bg-red-50 text-red-700 border border-red-100 px-2.5 py-1 rounded-full">
+                        {{ a.substance }}
+                        <button type="button" class="text-red-400 hover:text-red-700" (click)="removeAllergy(a.id)" aria-label="Retirer">×</button>
+                      </span>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
+              <div>
+                <label class="label">Groupe sanguin</label>
+                <select class="input" [(ngModel)]="bloodTypeDraft" [disabled]="clinical()!.bloodTypeLocked">
+                  <option value="">— Non renseigné —</option>
+                  @for (t of bloodTypes; track t) {
+                    <option [value]="t">{{ bloodLabels[t] }}</option>
+                  }
+                </select>
+              </div>
+              <div>
+                <label class="label">NIN</label>
+                <input class="input" [(ngModel)]="nationalIdDraft" maxlength="32" placeholder="GN-1991-…"/>
+              </div>
+              <div class="sm:col-span-2 flex gap-2">
+                <input class="input flex-1" [(ngModel)]="allergyDraft" placeholder="Ajouter une allergie (ex. Pénicilline)"/>
+                <button type="button" class="btn-secondary" (click)="addAllergy()" [disabled]="allergyDraft.trim().length < 2">Ajouter</button>
+              </div>
+            </div>
+            @if (clinicalError()) {
+              <p class="text-sm text-red-600">{{ clinicalError() }}</p>
+            }
+            @if (clinicalSuccess()) {
+              <p class="text-sm text-sky-700">{{ clinicalSuccess() }}</p>
+            }
+            <div class="flex justify-end">
+              <button type="button" class="btn-primary" (click)="saveClinical()" [disabled]="savingClinical()">
+                @if (savingClinical()) { Enregistrement... } @else { Enregistrer le dossier clinique }
+              </button>
+            </div>
+          }
         </div>
       }
 
@@ -214,17 +292,27 @@ import { SyliSpinnerComponent } from '../../../shared/components/syli-spinner/sy
 })
 export class PatientProfileComponent implements OnInit {
   profile    = signal<UserProfileDto | null>(null);
+  clinical   = signal<ClinicalProfileDto | null>(null);
   loading    = signal(true);
   editMode   = signal(false);
   saving     = signal(false);
+  savingClinical = signal(false);
   errorMsg   = signal('');
   successMsg = signal('');
+  clinicalError = signal('');
+  clinicalSuccess = signal('');
   passwordModalOpen = signal(false);
+  bloodTypeDraft = '';
+  nationalIdDraft = '';
+  allergyDraft = '';
+  readonly bloodTypes = BLOOD_TYPE_OPTIONS;
+  readonly bloodLabels = BLOOD_TYPE_LABELS;
 
   form!: FormGroup;
 
   constructor(
     private profileService: UserProfileService,
+    private clinicalProfileService: ClinicalProfileService,
     private fb: FormBuilder,
   ) {}
 
@@ -234,6 +322,13 @@ export class PatientProfileComponent implements OnInit {
         this.profile.set(p);
         this.buildForm(p);
         this.loading.set(false);
+        this.clinicalProfileService.getMine().subscribe({
+          next: (c) => {
+            this.clinical.set(c);
+            this.bloodTypeDraft = c.bloodType ?? '';
+            this.nationalIdDraft = c.nationalId ?? '';
+          },
+        });
       },
       error: () => this.loading.set(false),
     });
@@ -316,5 +411,54 @@ export class PatientProfileComponent implements OnInit {
   onPasswordChanged(): void {
     this.successMsg.set('Mot de passe modifié avec succès.');
     setTimeout(() => this.successMsg.set(''), 4000);
+  }
+
+  saveClinical(): void {
+    this.savingClinical.set(true);
+    this.clinicalError.set('');
+    const locked = this.clinical()?.bloodTypeLocked;
+    this.clinicalProfileService.updateMine({
+      bloodType: locked ? undefined : ((this.bloodTypeDraft as BloodType) || undefined),
+      nationalId: this.nationalIdDraft.trim() || '',
+    }).subscribe({
+      next: (c) => {
+        this.clinical.set(c);
+        this.bloodTypeDraft = c.bloodType ?? '';
+        this.nationalIdDraft = c.nationalId ?? '';
+        this.savingClinical.set(false);
+        this.clinicalSuccess.set('Dossier clinique mis à jour.');
+        setTimeout(() => this.clinicalSuccess.set(''), 4000);
+      },
+      error: (err) => {
+        this.clinicalError.set(err?.error?.detail || 'Impossible d\'enregistrer le dossier clinique.');
+        this.savingClinical.set(false);
+      },
+    });
+  }
+
+  addAllergy(): void {
+    const substance = this.allergyDraft.trim();
+    if (substance.length < 2) return;
+    this.clinicalError.set('');
+    this.clinicalProfileService.addAllergyMine({ substance }).subscribe({
+      next: (created) => {
+        this.clinical.update(c => c ? { ...c, allergies: [created, ...c.allergies] } : c);
+        this.allergyDraft = '';
+      },
+      error: (err) => {
+        this.clinicalError.set(err?.error?.detail || 'Impossible d\'ajouter l\'allergie.');
+      },
+    });
+  }
+
+  removeAllergy(id: number): void {
+    this.clinicalProfileService.deleteAllergyMine(id).subscribe({
+      next: () => {
+        this.clinical.update(c => c ? { ...c, allergies: c.allergies.filter(a => a.id !== id) } : c);
+      },
+      error: (err) => {
+        this.clinicalError.set(err?.error?.detail || 'Impossible de retirer l\'allergie.');
+      },
+    });
   }
 }

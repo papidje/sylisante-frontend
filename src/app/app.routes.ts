@@ -246,6 +246,16 @@ export const routes: Routes = [
       ),
   },
 
+  // Dossier médical partagé (Patient)
+  {
+    path: 'dossier',
+    canActivate: [authGuard, accountAccessGuard, roleGuard('ROLE_PATIENT')],
+    loadComponent: () =>
+      import('./features/patient/patient-dossier/patient-dossier.component').then(
+        m => m.PatientDossierComponent
+      ),
+  },
+
   // Admin
   {
     path: 'admin',

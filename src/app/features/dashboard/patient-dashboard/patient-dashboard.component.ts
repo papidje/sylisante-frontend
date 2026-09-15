@@ -6,6 +6,8 @@ import { AppointmentService } from '../../../core/services/appointment.service';
 import { AppointmentResponse, APPOINTMENT_STATUS_LABELS, AppointmentStatus } from '../../../core/models/appointment.model';
 import { formatLocalDateTime, parseLocalDateTime } from '../../../core/utils/date-utils';
 import { SyliSpinnerComponent } from '../../../shared/components/syli-spinner/syli-spinner.component';
+import { ClinicalProfileService } from '../../../core/services/clinical-profile.service';
+import { ClinicalProfileDto } from '../../../core/models/clinical-profile.model';
 
 @Component({
   selector: 'app-patient-dashboard',
@@ -42,7 +44,7 @@ import { SyliSpinnerComponent } from '../../../shared/components/syli-spinner/sy
       </div>
 
       <!-- Action rapide -->
-      <div class="grid sm:grid-cols-2 gap-4 mb-8">
+      <div class="grid sm:grid-cols-3 gap-4 mb-8">
         <a routerLink="/appointments/book"
            class="card flex items-center gap-4 hover:shadow-md transition-shadow cursor-pointer border-2 border-dashed border-primary-200 hover:border-primary-400 bg-primary-50">
           <div class="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -68,7 +70,42 @@ import { SyliSpinnerComponent } from '../../../shared/components/syli-spinner/sy
             <p class="text-sm text-gray-500">Historique et suivi</p>
           </div>
         </a>
+        <a routerLink="/dossier"
+           class="card flex items-center gap-4 hover:shadow-md transition-shadow cursor-pointer">
+          <div class="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center flex-shrink-0">
+            <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+          </div>
+          <div>
+            <p class="font-semibold text-gray-900">Mon dossier</p>
+            <p class="text-sm text-gray-500">Comptes rendus partagés</p>
+          </div>
+        </a>
       </div>
+
+      @if (clinical()) {
+        <div class="grid sm:grid-cols-3 gap-4 mb-8">
+          <div class="card">
+            <p class="text-xs uppercase tracking-wide text-gray-400 font-medium">Groupe sanguin</p>
+            <p class="text-xl font-bold text-gray-900 mt-1">{{ clinical()!.bloodTypeLabel || '—' }}</p>
+          </div>
+          <div class="card">
+            <p class="text-xs uppercase tracking-wide text-gray-400 font-medium">Allergies</p>
+            <p class="text-sm font-semibold mt-1"
+               [class.text-red-700]="clinical()!.allergies.length"
+               [class.text-gray-900]="!clinical()!.allergies.length">
+              {{ allergySummary() }}
+            </p>
+          </div>
+          <div class="card">
+            <p class="text-xs uppercase tracking-wide text-gray-400 font-medium">NIN</p>
+            <p class="text-sm font-semibold text-gray-900 mt-1">{{ clinical()!.nationalId || 'Non renseigné' }}</p>
+            <a routerLink="/patient-profile" class="text-xs text-primary-600 mt-2 inline-block">Compléter mon dossier</a>
+          </div>
+        </div>
+      }
 
       <!-- Prochains rendez-vous -->
       <div class="card">
@@ -139,10 +176,12 @@ export class PatientDashboardComponent implements OnInit {
   confirmedCount = signal(0);
   completedCount = signal(0);
   upcomingAppointments = signal<AppointmentResponse[]>([]);
+  clinical = signal<ClinicalProfileDto | null>(null);
 
   constructor(
     public authService: AuthService,
-    private appointmentService: AppointmentService
+    private appointmentService: AppointmentService,
+    private clinicalProfileService: ClinicalProfileService
   ) {}
 
   ngOnInit(): void {
@@ -153,6 +192,9 @@ export class PatientDashboardComponent implements OnInit {
         this.loading.set(false);
       },
       error: () => this.loading.set(false),
+    });
+    this.clinicalProfileService.getMine().subscribe({
+      next: (c) => this.clinical.set(c),
     });
   }
 
@@ -174,6 +216,11 @@ export class PatientDashboardComponent implements OnInit {
 
   formatDate(dateStr: string): string {
     return formatLocalDateTime(dateStr);
+  }
+
+  allergySummary(): string {
+    const allergies = this.clinical()?.allergies ?? [];
+    return allergies.length ? allergies.map(a => a.substance).join(', ') : 'Aucune déclarée';
   }
 
   getStatusLabel(status: AppointmentStatus): string {
