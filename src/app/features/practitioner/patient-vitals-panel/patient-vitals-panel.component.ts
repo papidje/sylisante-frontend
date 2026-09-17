@@ -17,7 +17,11 @@ import {
   formatGlucoseValue,
   formatVitalDate,
   parseOptionalNumber,
+  validateBloodPressure,
+  validateGlucose,
+  validateHba1c,
 } from '../../../core/models/vital.model';
+import { apiErrorMessage } from '../../../core/utils/http-error';
 
 @Component({
   selector: 'app-patient-vitals-panel',
@@ -51,12 +55,25 @@ import {
               }
             </div>
             <app-vital-chart [series]="bpSeries()" [distinguishSource]="true" ariaLabel="Tension patient"/>
-            <form class="grid grid-cols-4 gap-2 mt-3 items-end" (ngSubmit)="submitBp()">
-              <input class="input-field text-sm" type="number" name="sys" [(ngModel)]="sys" placeholder="SYS" min="60" max="250"/>
-              <input class="input-field text-sm" type="number" name="dia" [(ngModel)]="dia" placeholder="DIA" min="40" max="150"/>
-              <input class="input-field text-sm" type="number" name="hr" [(ngModel)]="hr" placeholder="Pouls"/>
+            <form class="grid grid-cols-4 gap-2 mt-3 items-end" (ngSubmit)="submitBp()" novalidate>
+              <label class="text-[11px] text-gray-500">
+                SYS mmHg
+                <input class="input-field text-sm mt-0.5" type="number" name="sys" [(ngModel)]="sys" placeholder="120"/>
+              </label>
+              <label class="text-[11px] text-gray-500">
+                DIA mmHg
+                <input class="input-field text-sm mt-0.5" type="number" name="dia" [(ngModel)]="dia" placeholder="80"/>
+              </label>
+              <label class="text-[11px] text-gray-500">
+                Pouls bpm
+                <input class="input-field text-sm mt-0.5" type="number" name="hr" [(ngModel)]="hr" placeholder="72"/>
+              </label>
               <button type="submit" class="btn-secondary text-sm py-2" [disabled]="savingBp()">OK</button>
             </form>
+            <p class="text-[11px] text-gray-400 mt-1">Bornes : SYS 60–250 · DIA 40–150 · SYS &gt; DIA · pouls 30–220</p>
+            @if (bpError()) {
+              <p class="text-xs text-red-700 bg-red-50 border border-red-100 rounded-lg px-2 py-1.5 mt-2">{{ bpError() }}</p>
+            }
             <ul class="mt-3 space-y-1.5 text-xs text-gray-600">
               @for (r of bpReadings().slice(0, 5); track r.groupId) {
                 <li class="flex justify-between gap-2">
@@ -81,21 +98,35 @@ import {
               }
             </div>
             <app-vital-chart [series]="glucoseSeries()" [distinguishSource]="true" ariaLabel="Glycémie patient"/>
-            <form class="grid grid-cols-3 gap-2 mt-3 items-end" (ngSubmit)="submitGlucose()">
-              <input class="input-field text-sm" type="number" step="0.1" name="fasting" [(ngModel)]="fasting" placeholder="À jeun"/>
-              <input class="input-field text-sm" type="number" step="0.1" name="post" [(ngModel)]="post" placeholder="Post"/>
+            <form class="grid grid-cols-3 gap-2 mt-3 items-end" (ngSubmit)="submitGlucose()" novalidate>
+              <label class="text-[11px] text-gray-500">
+                À jeun mmol/L
+                <input class="input-field text-sm mt-0.5" type="number" step="0.1" name="fasting" [(ngModel)]="fasting" placeholder="5,2"/>
+              </label>
+              <label class="text-[11px] text-gray-500">
+                Post mmol/L
+                <input class="input-field text-sm mt-0.5" type="number" step="0.1" name="post" [(ngModel)]="post" placeholder="7,8"/>
+              </label>
               <button type="submit" class="btn-secondary text-sm py-2" [disabled]="savingGlucose()">OK</button>
             </form>
-            <form class="flex gap-2 mt-3 items-end" (ngSubmit)="submitHba1c()">
-              <label class="text-xs text-gray-600 flex-1">
+            <p class="text-[11px] text-gray-400 mt-1">Au moins une valeur · 1,5–35 mmol/L</p>
+            @if (glucoseError()) {
+              <p class="text-xs text-red-700 bg-red-50 border border-red-100 rounded-lg px-2 py-1.5 mt-2">{{ glucoseError() }}</p>
+            }
+            <form class="flex gap-2 mt-3 items-end" (ngSubmit)="submitHba1c()" novalidate>
+              <label class="text-[11px] text-gray-500 flex-1">
                 HbA1c %
-                <input class="input-field text-sm mt-1" type="number" step="0.1" name="hba" [(ngModel)]="hba" min="3" max="20"/>
+                <input class="input-field text-sm mt-0.5" type="number" step="0.1" name="hba" [(ngModel)]="hba" placeholder="6,5"/>
               </label>
               <label class="text-xs text-gray-600 flex items-center gap-1 pb-2">
                 <input type="checkbox" [(ngModel)]="labResult" name="lab"/> Labo
               </label>
               <button type="submit" class="btn-secondary text-sm py-2" [disabled]="savingHba()">HbA1c</button>
             </form>
+            <p class="text-[11px] text-gray-400 mt-1">Bornes HbA1c : 3–20 %</p>
+            @if (hbaError()) {
+              <p class="text-xs text-red-700 bg-red-50 border border-red-100 rounded-lg px-2 py-1.5 mt-2">{{ hbaError() }}</p>
+            }
             @if (hba1c()) {
               <p class="text-xs text-gray-500 mt-2">
                 Dernière HbA1c : {{ hba1c()!.value }} % · {{ hba1c()!.classificationLabel }}
@@ -124,6 +155,9 @@ export class PatientVitalsPanelComponent implements OnChanges {
 
   loading = signal(true);
   error = signal('');
+  bpError = signal('');
+  glucoseError = signal('');
+  hbaError = signal('');
   success = signal('');
   bpReadings = signal<BloodPressureReadingDto[]>([]);
   glucoseReadings = signal<GlucoseReadingDto[]>([]);
@@ -204,13 +238,18 @@ export class PatientVitalsPanelComponent implements OnChanges {
     const systolic = parseOptionalNumber(this.sys);
     const diastolic = parseOptionalNumber(this.dia);
     const heartRate = parseOptionalNumber(this.hr);
-    if (systolic == null || diastolic == null) {
-      this.error.set('Indiquez SYS et DIA.');
+    const localError = validateBloodPressure(systolic, diastolic, heartRate);
+    if (localError) {
+      this.bpError.set(localError);
       return;
     }
     this.savingBp.set(true);
-    this.error.set('');
-    this.vitalService.addBloodPressureForPatient(this.patientUserId, { systolic, diastolic, heartRate }).subscribe({
+    this.bpError.set('');
+    this.vitalService.addBloodPressureForPatient(this.patientUserId, {
+      systolic: systolic!,
+      diastolic: diastolic!,
+      heartRate,
+    }).subscribe({
       next: (created) => {
         this.bpReadings.update(list => [created, ...list]);
         this.sys = '';
@@ -222,7 +261,7 @@ export class PatientVitalsPanelComponent implements OnChanges {
       },
       error: (err: HttpErrorResponse) => {
         this.savingBp.set(false);
-        this.error.set(err.error?.detail || 'Enregistrement tension impossible.');
+        this.bpError.set(apiErrorMessage(err, 'Enregistrement tension impossible.'));
       },
     });
   }
@@ -230,12 +269,13 @@ export class PatientVitalsPanelComponent implements OnChanges {
   submitGlucose(): void {
     const fasting = parseOptionalNumber(this.fasting);
     const postprandial = parseOptionalNumber(this.post);
-    if (fasting == null && postprandial == null) {
-      this.error.set('Indiquez au moins une glycémie.');
+    const localError = validateGlucose(fasting, postprandial);
+    if (localError) {
+      this.glucoseError.set(localError);
       return;
     }
     this.savingGlucose.set(true);
-    this.error.set('');
+    this.glucoseError.set('');
     this.vitalService.addGlucoseForPatient(this.patientUserId, { fasting, postprandial }).subscribe({
       next: (created) => {
         this.glucoseReadings.update(list => [created, ...list]);
@@ -247,20 +287,21 @@ export class PatientVitalsPanelComponent implements OnChanges {
       },
       error: (err: HttpErrorResponse) => {
         this.savingGlucose.set(false);
-        this.error.set(err.error?.detail || 'Enregistrement glycémie impossible.');
+        this.glucoseError.set(apiErrorMessage(err, 'Enregistrement glycémie impossible.'));
       },
     });
   }
 
   submitHba1c(): void {
     const value = parseOptionalNumber(this.hba);
-    if (value == null) {
-      this.error.set('Indiquez l\'HbA1c.');
+    const localError = validateHba1c(value);
+    if (localError) {
+      this.hbaError.set(localError);
       return;
     }
     this.savingHba.set(true);
-    this.error.set('');
-    this.vitalService.addHba1cForPatient(this.patientUserId, { value, labResult: this.labResult }).subscribe({
+    this.hbaError.set('');
+    this.vitalService.addHba1cForPatient(this.patientUserId, { value: value!, labResult: this.labResult }).subscribe({
       next: (created) => {
         this.hba1c.set(created);
         this.hba = '';
@@ -270,7 +311,7 @@ export class PatientVitalsPanelComponent implements OnChanges {
       },
       error: (err: HttpErrorResponse) => {
         this.savingHba.set(false);
-        this.error.set(err.error?.detail || 'Enregistrement HbA1c impossible.');
+        this.hbaError.set(apiErrorMessage(err, 'Enregistrement HbA1c impossible.'));
       },
     });
   }
@@ -278,6 +319,9 @@ export class PatientVitalsPanelComponent implements OnChanges {
   private reload(): void {
     this.loading.set(true);
     this.error.set('');
+    this.bpError.set('');
+    this.glucoseError.set('');
+    this.hbaError.set('');
     forkJoin({
       summary: this.vitalService.getSummaryForPatient(this.patientUserId),
       bp: this.vitalService.listBloodPressureForPatient(this.patientUserId),
@@ -291,7 +335,7 @@ export class PatientVitalsPanelComponent implements OnChanges {
       },
       error: (err: HttpErrorResponse) => {
         this.loading.set(false);
-        this.error.set(err.error?.detail || 'Impossible de charger les constantes.');
+        this.error.set(apiErrorMessage(err, 'Impossible de charger les constantes.'));
       },
     });
   }

@@ -120,3 +120,49 @@ export function parseOptionalNumber(raw: string | number | null | undefined): nu
   const n = typeof raw === 'number' ? raw : Number(String(raw).replace(',', '.'));
   return Number.isFinite(n) ? n : null;
 }
+
+export function validateBloodPressure(
+  systolic: number | null,
+  diastolic: number | null,
+  heartRate: number | null
+): string | null {
+  if (systolic == null || diastolic == null) {
+    return 'Indiquez la systolique et la diastolique (mmHg).';
+  }
+  if (systolic < 60 || systolic > 250) {
+    return `Systolique hors bornes (60–250 mmHg). Valeur saisie : ${systolic}.`;
+  }
+  if (diastolic < 40 || diastolic > 150) {
+    return `Diastolique hors bornes (40–150 mmHg). Valeur saisie : ${diastolic}.`;
+  }
+  if (systolic <= diastolic) {
+    return `La systolique (${systolic} mmHg) doit être supérieure à la diastolique (${diastolic} mmHg).`;
+  }
+  if (heartRate != null && (heartRate < 30 || heartRate > 220)) {
+    return `Pouls hors bornes (30–220 bpm). Valeur saisie : ${heartRate}.`;
+  }
+  return null;
+}
+
+export function validateGlucose(fasting: number | null, postprandial: number | null): string | null {
+  if (fasting == null && postprandial == null) {
+    return 'Indiquez au moins une glycémie à jeun ou post-prandiale (mmol/L).';
+  }
+  if (fasting != null && (fasting < 1.5 || fasting > 35)) {
+    return `Glycémie à jeun hors bornes (1,5–35 mmol/L). Valeur saisie : ${fasting}.`;
+  }
+  if (postprandial != null && (postprandial < 1.5 || postprandial > 35)) {
+    return `Glycémie post-prandiale hors bornes (1,5–35 mmol/L). Valeur saisie : ${postprandial}.`;
+  }
+  return null;
+}
+
+export function validateHba1c(value: number | null): string | null {
+  if (value == null) {
+    return 'Indiquez l\'HbA1c (3–20 %).';
+  }
+  if (value < 3 || value > 20) {
+    return `HbA1c hors bornes (3–20 %). Valeur saisie : ${value}.`;
+  }
+  return null;
+}

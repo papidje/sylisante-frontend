@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 import { VitalService } from '../../../core/services/vital.service';
 import { SyliSpinnerComponent } from '../../../shared/components/syli-spinner/syli-spinner.component';
 import { VitalChartComponent, VitalChartSeries } from '../../../shared/components/vital-chart/vital-chart.component';
+import { apiErrorMessage } from '../../../core/utils/http-error';
 import {
   BloodPressureReadingDto,
   BP_CLASS_BADGE,
@@ -13,6 +14,7 @@ import {
   formatBp,
   formatVitalDate,
   parseOptionalNumber,
+  validateBloodPressure,
 } from '../../../core/models/vital.model';
 
 @Component({
@@ -45,23 +47,24 @@ import {
 
       <div class="card mt-6">
         <h2 class="text-base font-semibold text-gray-900 mb-4">Nouvelle mesure (domicile)</h2>
-        <form class="grid sm:grid-cols-4 gap-3 items-end" (ngSubmit)="submit()">
+        <form class="grid sm:grid-cols-4 gap-3 items-end" (ngSubmit)="submit()" novalidate>
           <label class="text-sm text-gray-700">
-            Systolique
-            <input class="input-field mt-1" type="number" name="sys" [(ngModel)]="sys" min="60" max="250" required/>
+            Systolique (mmHg)
+            <input class="input-field mt-1" type="number" name="sys" [(ngModel)]="sys" placeholder="120"/>
           </label>
           <label class="text-sm text-gray-700">
-            Diastolique
-            <input class="input-field mt-1" type="number" name="dia" [(ngModel)]="dia" min="40" max="150" required/>
+            Diastolique (mmHg)
+            <input class="input-field mt-1" type="number" name="dia" [(ngModel)]="dia" placeholder="80"/>
           </label>
           <label class="text-sm text-gray-700">
-            Pouls (opt.)
-            <input class="input-field mt-1" type="number" name="hr" [(ngModel)]="hr" min="30" max="220"/>
+            Pouls (bpm, opt.)
+            <input class="input-field mt-1" type="number" name="hr" [(ngModel)]="hr" placeholder="72"/>
           </label>
           <button type="submit" class="btn-primary" [disabled]="saving()">
             @if (saving()) { Enregistrement… } @else { Enregistrer }
           </button>
         </form>
+        <p class="text-xs text-gray-400 mt-2">Bornes : SYS 60–250 · DIA 40–150 · SYS &gt; DIA · pouls 30–220</p>
       </div>
 
       @if (loading()) {
@@ -88,7 +91,7 @@ import {
 
         <div class="card mt-6">
           <h2 class="text-base font-semibold text-gray-900 mb-2">Évolution</h2>
-          <app-vital-chart [series]="chartSeries()" ariaLabel="Évolution de la tension"/>
+          <app-vital-chart [series]="chartSeries()" [distinguishSource]="true" ariaLabel="Évolution de la tension"/>
         </div>
 
         <div class="card mt-6 overflow-x-auto">
@@ -172,12 +175,20 @@ export class BloodPressureComponent implements OnInit {
       {
         label: 'Systolique',
         color: '#ef4444',
-        points: this.readings().map(r => ({ t: formatVitalDate(r.measuredAt), v: Number(r.systolic) })),
+        points: this.readings().map(r => ({
+          t: formatVitalDate(r.measuredAt),
+          v: Number(r.systolic),
+          source: r.source,
+        })),
       },
       {
         label: 'Diastolique',
         color: '#0ea5e9',
-        points: this.readings().map(r => ({ t: formatVitalDate(r.measuredAt), v: Number(r.diastolic) })),
+        points: this.readings().map(r => ({
+          t: formatVitalDate(r.measuredAt),
+          v: Number(r.diastolic),
+          source: r.source,
+        })),
       },
     ];
   }
@@ -186,13 +197,14 @@ export class BloodPressureComponent implements OnInit {
     const systolic = parseOptionalNumber(this.sys);
     const diastolic = parseOptionalNumber(this.dia);
     const heartRate = parseOptionalNumber(this.hr);
-    if (systolic == null || diastolic == null) {
-      this.error.set('Indiquez la systolique et la diastolique.');
+    const localError = validateBloodPressure(systolic, diastolic, heartRate);
+    if (localError) {
+      this.error.set(localError);
       return;
     }
     this.saving.set(true);
     this.error.set('');
-    this.vitalService.addMyBloodPressure({ systolic, diastolic, heartRate }).subscribe({
+    this.vitalService.addMyBloodPressure({ systolic: systolic!, diastolic: diastolic!, heartRate }).subscribe({
       next: (created) => {
         this.readings.update(list => [created, ...list]);
         this.sys = '';
@@ -206,7 +218,7 @@ export class BloodPressureComponent implements OnInit {
       },
       error: (err: HttpErrorResponse) => {
         this.saving.set(false);
-        this.error.set(err.error?.detail || 'Impossible d\'enregistrer la mesure.');
+        this.error.set(apiErrorMessage(err, 'Impossible d\'enregistrer la mesure.'));
       },
     });
   }

@@ -17,8 +17,9 @@ interface PlottedPoint {
   cx: number;
   cy: number;
   color: string;
+  fill: string;
   title: string;
-  dashed: boolean;
+  home: boolean;
 }
 
 interface PlottedLine {
@@ -38,11 +39,11 @@ interface PlottedLine {
         @for (line of lines; track $index) {
           <path [attr.d]="line.d" fill="none" [attr.stroke]="line.color" stroke-width="2.5"
                 stroke-linecap="round" stroke-linejoin="round"
-                [attr.stroke-dasharray]="line.dashed ? '6 5' : 'none'"/>
+                [attr.stroke-dasharray]="line.dashed ? '6 5' : null"/>
         }
         @for (p of plotted; track $index) {
           <circle [attr.cx]="p.cx" [attr.cy]="p.cy" r="4.5"
-                  [attr.fill]="p.color" stroke="white" stroke-width="1.5">
+                  [attr.fill]="p.fill" [attr.stroke]="p.color" stroke-width="2">
             <title>{{ p.title }}</title>
           </circle>
         }
@@ -56,11 +57,11 @@ interface PlottedLine {
         }
         @if (distinguishSource) {
           <span class="inline-flex items-center gap-1.5">
-            <span class="w-5 border-t-2 border-dashed border-sky-400"></span>
+            <span class="w-5 border-t-2 border-dashed border-slate-500"></span>
             Domicile
           </span>
           <span class="inline-flex items-center gap-1.5">
-            <span class="w-5 border-t-2 border-emerald-500"></span>
+            <span class="w-5 border-t-2 border-slate-700"></span>
             Cabinet / labo
           </span>
         }
@@ -100,30 +101,54 @@ export class VitalChartComponent implements OnChanges {
       const chronological = [...s.points].reverse();
       if (chronological.length === 0) continue;
       const n = chronological.length;
-      const coords: { x: number; y: number; p: VitalChartPoint }[] = chronological.map((p, i) => ({
+      const coords = chronological.map((p, i) => ({
         x: padX + (n === 1 ? (width - 2 * padX) / 2 : (i * (width - 2 * padX)) / (n - 1)),
         y: padY + (height - 2 * padY) * (1 - (p.v - min) / span),
         p,
       }));
 
-      const home = this.distinguishSource;
-      let d = '';
-      coords.forEach((c, i) => {
-        d += `${i === 0 ? 'M' : 'L'}${c.x.toFixed(1)} ${c.y.toFixed(1)} `;
-        const dashed = home && c.p.source === 'SELF';
+      for (let i = 0; i < coords.length - 1; i++) {
+        const a = coords[i];
+        const b = coords[i + 1];
+        const aHome = this.isHome(a.p.source);
+        const bHome = this.isHome(b.p.source);
+        if (!this.distinguishSource || aHome === bHome) {
+          this.lines.push({
+            d: `M${a.x.toFixed(1)} ${a.y.toFixed(1)} L${b.x.toFixed(1)} ${b.y.toFixed(1)}`,
+            color: s.color,
+            dashed: this.distinguishSource && aHome,
+          });
+        } else {
+          const mx = (a.x + b.x) / 2;
+          const my = (a.y + b.y) / 2;
+          this.lines.push({
+            d: `M${a.x.toFixed(1)} ${a.y.toFixed(1)} L${mx.toFixed(1)} ${my.toFixed(1)}`,
+            color: s.color,
+            dashed: aHome,
+          });
+          this.lines.push({
+            d: `M${mx.toFixed(1)} ${my.toFixed(1)} L${b.x.toFixed(1)} ${b.y.toFixed(1)}`,
+            color: s.color,
+            dashed: bHome,
+          });
+        }
+      }
+
+      for (const c of coords) {
+        const home = this.distinguishSource && this.isHome(c.p.source);
         this.plotted.push({
           cx: c.x,
           cy: c.y,
-          color: dashed ? '#0ea5e9' : s.color,
-          dashed,
+          color: s.color,
+          fill: home ? '#ffffff' : s.color,
+          home,
           title: `${s.label} ${c.p.v} — ${c.p.t}`,
         });
-      });
-      this.lines.push({
-        d: d.trim(),
-        color: s.color,
-        dashed: home && chronological.every(p => p.source === 'SELF'),
-      });
+      }
     }
+  }
+
+  private isHome(source: VitalSource | undefined): boolean {
+    return source === 'SELF';
   }
 }

@@ -15,7 +15,9 @@ import {
   formatGlucoseValue,
   formatVitalDate,
   parseOptionalNumber,
+  validateGlucose,
 } from '../../../core/models/vital.model';
+import { apiErrorMessage } from '../../../core/utils/http-error';
 
 @Component({
   selector: 'app-diabetes',
@@ -38,20 +40,20 @@ import {
 
       <div class="card mt-6">
         <h2 class="text-base font-semibold text-gray-900 mb-4">Nouvelle glycémie (domicile)</h2>
-        <form class="grid sm:grid-cols-3 gap-3 items-end" (ngSubmit)="submit()">
+        <form class="grid sm:grid-cols-3 gap-3 items-end" (ngSubmit)="submit()" novalidate>
           <label class="text-sm text-gray-700">
-            À jeun
-            <input class="input-field mt-1" type="number" step="0.1" name="fasting" [(ngModel)]="fasting" min="1.5" max="35"/>
+            À jeun (mmol/L)
+            <input class="input-field mt-1" type="number" step="0.1" name="fasting" [(ngModel)]="fasting" placeholder="5,2"/>
           </label>
           <label class="text-sm text-gray-700">
-            Post-prandiale
-            <input class="input-field mt-1" type="number" step="0.1" name="post" [(ngModel)]="post" min="1.5" max="35"/>
+            Post-prandiale (mmol/L)
+            <input class="input-field mt-1" type="number" step="0.1" name="post" [(ngModel)]="post" placeholder="7,8"/>
           </label>
           <button type="submit" class="btn-primary" [disabled]="saving()">
             @if (saving()) { Enregistrement… } @else { Enregistrer }
           </button>
         </form>
-        <p class="text-xs text-gray-400 mt-2">Indiquez au moins une des deux valeurs.</p>
+        <p class="text-xs text-gray-400 mt-2">Au moins une valeur · bornes 1,5–35 mmol/L</p>
       </div>
 
       @if (loading()) {
@@ -85,7 +87,7 @@ import {
 
         <div class="card mt-6">
           <h2 class="text-base font-semibold text-gray-900 mb-2">Évolution (à jeun)</h2>
-          <app-vital-chart [series]="chartSeries()" ariaLabel="Évolution de la glycémie à jeun"/>
+          <app-vital-chart [series]="chartSeries()" [distinguishSource]="true" ariaLabel="Évolution de la glycémie à jeun"/>
         </div>
 
         <div class="card mt-6 overflow-x-auto">
@@ -174,15 +176,16 @@ export class DiabetesComponent implements OnInit {
   chartSeries(): VitalChartSeries[] {
     const fastingPoints = this.readings()
       .filter(r => r.fasting != null)
-      .map(r => ({ t: formatVitalDate(r.measuredAt), v: Number(r.fasting) }));
+      .map(r => ({ t: formatVitalDate(r.measuredAt), v: Number(r.fasting), source: r.source }));
     return [{ label: 'Glycémie à jeun', color: '#10b981', points: fastingPoints }];
   }
 
   submit(): void {
     const fasting = parseOptionalNumber(this.fasting);
     const postprandial = parseOptionalNumber(this.post);
-    if (fasting == null && postprandial == null) {
-      this.error.set('Indiquez au moins une glycémie à jeun ou post-prandiale.');
+    const localError = validateGlucose(fasting, postprandial);
+    if (localError) {
+      this.error.set(localError);
       return;
     }
     this.saving.set(true);
@@ -198,7 +201,7 @@ export class DiabetesComponent implements OnInit {
       },
       error: (err: HttpErrorResponse) => {
         this.saving.set(false);
-        this.error.set(err.error?.detail || 'Impossible d\'enregistrer la glycémie.');
+        this.error.set(apiErrorMessage(err, 'Impossible d\'enregistrer la glycémie.'));
       },
     });
   }
