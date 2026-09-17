@@ -12,6 +12,8 @@ export type NotificationType =
   | 'TRANSFER_RECEIVED'
   | 'CONSULTATION_REPORT_SHARED'
   | 'VITAL_ALERT'
+  | 'PREGNANCY_UPDATE'
+  | 'VACCINATION_RECORDED'
   | 'ACCOUNT_SUSPENDED'
   | 'ACCOUNT_ACTIVATED'
   | 'SUBSCRIPTION_EXPIRED'
@@ -54,6 +56,8 @@ export const NOTIFICATION_ICONS: Record<NotificationType, string> = {
   TRANSFER_RECEIVED:      '📥',
   CONSULTATION_REPORT_SHARED: '📋',
   VITAL_ALERT:            '🚨',
+  PREGNANCY_UPDATE:       '🤰',
+  VACCINATION_RECORDED:   '💉',
   ACCOUNT_SUSPENDED:      '🚫',
   ACCOUNT_ACTIVATED:      '🎉',
   SUBSCRIPTION_EXPIRED:   '⏳',
@@ -99,6 +103,14 @@ export function notificationRoute(n: NotificationDto, isAdmin: boolean): string 
 
   if (n.type === 'VITAL_ALERT' || n.referenceType === 'VITAL') {
     return '/health/blood-pressure';
+  }
+
+  if (n.type === 'PREGNANCY_UPDATE' || n.referenceType === 'PREGNANCY') {
+    return '/health/pregnancy';
+  }
+
+  if (n.type === 'VACCINATION_RECORDED' || n.referenceType === 'VACCINATION') {
+    return '/health/vaccinations';
   }
 
   if (!n.referenceId) return null;

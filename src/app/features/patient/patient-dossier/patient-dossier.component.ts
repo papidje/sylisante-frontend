@@ -4,11 +4,12 @@ import { RouterLink } from '@angular/router';
 import { ConsultationReportService, ConsultationReportDto } from '../../../core/services/consultation-report.service';
 import { formatLocalDateTime } from '../../../core/utils/date-utils';
 import { SyliSpinnerComponent } from '../../../shared/components/syli-spinner/syli-spinner.component';
+import { ConsultationReportBodyComponent } from '../../../shared/components/consultation-report-body/consultation-report-body.component';
 
 @Component({
   selector: 'app-patient-dossier',
   standalone: true,
-  imports: [CommonModule, RouterLink, SyliSpinnerComponent],
+  imports: [CommonModule, RouterLink, SyliSpinnerComponent, ConsultationReportBodyComponent],
   template: `
     <div class="max-w-3xl mx-auto px-4 py-8">
       <div class="mb-8">
@@ -48,7 +49,7 @@ import { SyliSpinnerComponent } from '../../../shared/components/syli-spinner/sy
                       </p>
                     </div>
                   </div>
-                  <p class="text-sm text-gray-800 leading-relaxed whitespace-pre-line">{{ report.content }}</p>
+                  <app-consultation-report-body [report]="report" />
                 </div>
               </div>
             }

@@ -281,6 +281,22 @@ export const routes: Routes = [
         m => m.DiabetesComponent
       ),
   },
+  {
+    path: 'health/pregnancy',
+    canActivate: [authGuard, accountAccessGuard, roleGuard('ROLE_PATIENT')],
+    loadComponent: () =>
+      import('./features/patient/pregnancy/pregnancy.component').then(
+        m => m.PregnancyComponent
+      ),
+  },
+  {
+    path: 'health/vaccinations',
+    canActivate: [authGuard, accountAccessGuard, roleGuard('ROLE_PATIENT')],
+    loadComponent: () =>
+      import('./features/patient/vaccination/vaccination.component').then(
+        m => m.VaccinationComponent
+      ),
+  },
 
   // Admin
   {

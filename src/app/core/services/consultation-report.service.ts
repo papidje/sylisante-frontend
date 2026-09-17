@@ -11,6 +11,11 @@ export interface ConsultationReportDto {
   patientName: string;
   appointmentDateTime: string;
   content: string;
+  diagnosis: string | null;
+  treatment: string | null;
+  exams: string | null;
+  instructions: string | null;
+  internalNotes: string | null;
   visibleToPatient: boolean;
   visibleToPatientAt: string | null;
   createdAt: string;
@@ -18,8 +23,23 @@ export interface ConsultationReportDto {
 
 export interface CreateConsultationReportRequest {
   appointmentId: number;
-  content: string;
+  content?: string | null;
+  diagnosis?: string | null;
+  treatment?: string | null;
+  exams?: string | null;
+  instructions?: string | null;
+  internalNotes?: string | null;
   visibleToPatient: boolean;
+}
+
+export interface UpdateConsultationReportRequest {
+  content?: string | null;
+  diagnosis?: string | null;
+  treatment?: string | null;
+  exams?: string | null;
+  instructions?: string | null;
+  internalNotes?: string | null;
+  visibleToPatient?: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -30,11 +50,8 @@ export class ConsultationReportService {
     return this.http.post<ConsultationReportDto>('/api/consultation-reports', request);
   }
 
-  updateReport(id: number, content: string, visibleToPatient?: boolean): Observable<ConsultationReportDto> {
-    return this.http.put<ConsultationReportDto>(`/api/consultation-reports/${id}`, {
-      content,
-      visibleToPatient,
-    });
+  updateReport(id: number, request: UpdateConsultationReportRequest): Observable<ConsultationReportDto> {
+    return this.http.put<ConsultationReportDto>(`/api/consultation-reports/${id}`, request);
   }
 
   getMyReports(): Observable<ConsultationReportDto[]> {

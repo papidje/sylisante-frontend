@@ -5,11 +5,12 @@ import {
   SharedReportDto,
 } from '../../../core/models/transfer.model';
 import { formatLocalDateTime } from '../../../core/utils/date-utils';
+import { ConsultationReportBodyComponent } from '../../../shared/components/consultation-report-body/consultation-report-body.component';
 
 @Component({
   selector: 'app-shared-records',
   standalone: true,
-  imports: [],
+  imports: [ConsultationReportBodyComponent],
   template: `
     <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div class="mb-6">
@@ -84,7 +85,7 @@ import { formatLocalDateTime } from '../../../core/utils/date-utils';
                               {{ cr.sourcePractitionerName }}
                             </span>
                           </div>
-                          <p class="text-sm text-gray-700 whitespace-pre-wrap">{{ cr.content }}</p>
+                          <app-consultation-report-body [report]="cr" />
                           <p class="text-xs text-gray-400 mt-1.5">Rédigé le {{ formatDateShort(cr.createdAt) }}</p>
                         </div>
                       </div>

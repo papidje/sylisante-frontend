@@ -9,6 +9,10 @@ import { SyliSpinnerComponent } from '../../../shared/components/syli-spinner/sy
 import { ClinicalProfileService } from '../../../core/services/clinical-profile.service';
 import { ClinicalProfileDto } from '../../../core/models/clinical-profile.model';
 import { VitalService } from '../../../core/services/vital.service';
+import { PregnancyService } from '../../../core/services/pregnancy.service';
+import { PregnancyOverviewDto } from '../../../core/models/pregnancy.model';
+import { VaccinationService } from '../../../core/services/vaccination.service';
+import { VaccinationOverviewDto } from '../../../core/models/vaccination.model';
 import {
   BloodPressureReadingDto,
   GlucoseReadingDto,
@@ -32,6 +36,18 @@ import {
         </h1>
         <p class="text-gray-500 mt-1">Voici un aperçu de votre espace santé</p>
       </div>
+
+      @if (pregnancy()?.episode?.status === 'ACTIVE') {
+        <a routerLink="/health/pregnancy"
+           class="card mb-8 flex items-center justify-between gap-4 border-l-4 border-rose-400 hover:shadow-md">
+          <div>
+            <p class="text-xs uppercase tracking-wide text-rose-600 font-medium">Grossesse</p>
+            <p class="text-xl font-bold text-gray-900 mt-1">Enceinte · {{ pregnancy()!.episode!.gestationalLabel }}</p>
+            <p class="text-sm text-gray-500 mt-0.5">Ouvrir le suivi</p>
+          </div>
+          <span class="text-primary-600 text-sm font-medium">Voir →</span>
+        </a>
+      }
 
       <!-- Statistiques -->
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
@@ -102,8 +118,8 @@ import {
             </svg>
           </div>
           <div>
-            <p class="font-semibold text-gray-900">Suivi tension &amp; glycémie</p>
-            <p class="text-sm text-gray-500">Saisie à domicile, courbes et alertes</p>
+            <p class="font-semibold text-gray-900">Suivi santé</p>
+            <p class="text-sm text-gray-500">Tension, glycémie, vaccins</p>
           </div>
         </a>
       </div>
@@ -130,11 +146,10 @@ import {
         </div>
       }
 
-      @if (vitals(); as v) {
-        <div class="grid sm:grid-cols-2 gap-4 mb-8">
+      <div class="grid sm:grid-cols-3 gap-4 mb-8">
           <a routerLink="/health/blood-pressure" class="card hover:shadow-md transition-shadow">
             <p class="text-xs uppercase tracking-wide text-gray-400 font-medium">Tension</p>
-            @if (v.latestBloodPressure; as bp) {
+            @if (vitals()?.latestBloodPressure; as bp) {
               <p class="text-xl font-bold text-gray-900 mt-1">{{ formatBp(bp) }} mmHg</p>
               <span class="inline-flex mt-2 text-xs font-medium px-2 py-0.5 rounded-full border"
                     [class]="bpBadge(bp)">{{ bp.classificationLabel }}</span>
@@ -144,7 +159,7 @@ import {
           </a>
           <a routerLink="/health/diabetes" class="card hover:shadow-md transition-shadow">
             <p class="text-xs uppercase tracking-wide text-gray-400 font-medium">Glycémie</p>
-            @if (v.latestGlucose; as g) {
+            @if (vitals()?.latestGlucose; as g) {
               <p class="text-xl font-bold text-gray-900 mt-1">{{ formatGlucoseValue(g.fasting ?? g.postprandial) }}</p>
               @if (g.classificationLabel) {
                 <span class="inline-flex mt-2 text-xs font-medium px-2 py-0.5 rounded-full border"
@@ -154,8 +169,16 @@ import {
               <p class="text-xl font-bold text-gray-900 mt-1">Aucune mesure</p>
             }
           </a>
+          <a routerLink="/health/vaccinations" class="card hover:shadow-md transition-shadow">
+            <p class="text-xs uppercase tracking-wide text-gray-400 font-medium">Vaccins</p>
+            @if (vaccinations()?.latest; as latest) {
+              <p class="text-xl font-bold text-gray-900 mt-1">{{ vaccinations()!.total }} dose{{ vaccinations()!.total > 1 ? 's' : '' }}</p>
+              <p class="text-xs text-gray-500 mt-1">Dernier : {{ latest.displayName }}</p>
+            } @else {
+              <p class="text-xl font-bold text-gray-900 mt-1">Aucune dose</p>
+            }
+          </a>
         </div>
-      }
 
       <!-- Prochains rendez-vous -->
       <div class="card">
@@ -228,12 +251,16 @@ export class PatientDashboardComponent implements OnInit {
   upcomingAppointments = signal<AppointmentResponse[]>([]);
   clinical = signal<ClinicalProfileDto | null>(null);
   vitals = signal<VitalSummaryDto | null>(null);
+  pregnancy = signal<PregnancyOverviewDto | null>(null);
+  vaccinations = signal<VaccinationOverviewDto | null>(null);
 
   constructor(
     public authService: AuthService,
     private appointmentService: AppointmentService,
     private clinicalProfileService: ClinicalProfileService,
-    private vitalService: VitalService
+    private vitalService: VitalService,
+    private pregnancyService: PregnancyService,
+    private vaccinationService: VaccinationService
   ) {}
 
   ngOnInit(): void {
@@ -250,6 +277,12 @@ export class PatientDashboardComponent implements OnInit {
     });
     this.vitalService.getMySummary().subscribe({
       next: (v) => this.vitals.set(v),
+    });
+    this.pregnancyService.getMine().subscribe({
+      next: (p) => this.pregnancy.set(p),
+    });
+    this.vaccinationService.getMine().subscribe({
+      next: (v) => this.vaccinations.set(v),
     });
   }
 

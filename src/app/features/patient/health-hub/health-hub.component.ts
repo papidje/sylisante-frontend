@@ -1,6 +1,9 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { forkJoin } from 'rxjs';
 import { VitalService } from '../../../core/services/vital.service';
+import { PregnancyService } from '../../../core/services/pregnancy.service';
+import { VaccinationService } from '../../../core/services/vaccination.service';
 import { SyliSpinnerComponent } from '../../../shared/components/syli-spinner/syli-spinner.component';
 import {
   BloodPressureReadingDto,
@@ -11,6 +14,9 @@ import {
   formatBp,
   formatGlucoseValue,
 } from '../../../core/models/vital.model';
+import { formatLocalDate } from '../../../core/utils/date-utils';
+import { PregnancyOverviewDto } from '../../../core/models/pregnancy.model';
+import { VaccinationOverviewDto } from '../../../core/models/vaccination.model';
 
 @Component({
   selector: 'app-health-hub',
@@ -21,8 +27,7 @@ import {
       <div class="mb-8">
         <h1 class="text-2xl font-bold text-gray-900">Suivi</h1>
         <p class="text-gray-500 mt-1 text-sm">
-          Tension et glycémie — mesures à domicile ou au cabinet.
-          Les seuils sont indicatifs, ce n'est pas un diagnostic.
+          Tension, glycémie, grossesse et vaccins — les seuils sont indicatifs, ce n'est pas un diagnostic.
         </p>
       </div>
 
@@ -41,12 +46,6 @@ import {
                     [class]="bpBadge(bp)">
                 {{ bp.classificationLabel }}
               </span>
-              @if (summary()?.averageSystolic != null) {
-                <p class="text-xs text-gray-400 mt-3">
-                  Moyenne {{ summary()!.averageSystolic }}/{{ summary()!.averageDiastolic }} mmHg
-                  · {{ summary()!.bloodPressureCount }} mesure{{ summary()!.bloodPressureCount > 1 ? 's' : '' }}
-                </p>
-              }
             } @else {
               <p class="text-sm text-gray-400 mt-3">Aucune mesure. Saisissez votre tension à domicile.</p>
             }
@@ -64,22 +63,41 @@ import {
                   {{ g.classificationLabel }}
                 </span>
               }
-              @if (summary()?.latestHba1c; as hba) {
-                <p class="text-xs text-gray-500 mt-3">
-                  HbA1c {{ hba.value }} %
-                  · {{ hba.classificationLabel }}
-                </p>
-              }
             } @else {
               <p class="text-sm text-gray-400 mt-3">Aucune glycémie. Unité : mmol/L.</p>
             }
             <p class="text-sm text-primary-600 font-medium mt-4">Ouvrir le suivi →</p>
           </a>
-        </div>
 
-        <p class="text-xs text-gray-400 mt-6">
-          Grossesse et carnet vaccinal arriveront dans une prochaine étape.
-        </p>
+          @if (pregnancy()?.eligible) {
+            <a routerLink="/health/pregnancy"
+               class="card hover:shadow-md transition-shadow border-l-4 border-rose-400">
+              <p class="text-xs uppercase tracking-wide text-gray-400 font-medium">Grossesse</p>
+              @if (pregnancy()?.episode?.status === 'ACTIVE') {
+                <p class="text-3xl font-bold text-gray-900 mt-2">{{ pregnancy()!.episode!.gestationalLabel }}</p>
+                <p class="text-sm text-gray-500 mt-1">Enceinte · DPA {{ formatLocalDate(pregnancy()!.episode!.dueDate) }}</p>
+              } @else {
+                <p class="text-xl font-bold text-gray-900 mt-2">Ouvrir un suivi</p>
+                <p class="text-sm text-gray-400 mt-1">Date des dernières règles (DDR)</p>
+              }
+              <p class="text-sm text-primary-600 font-medium mt-4">Ouvrir le suivi →</p>
+            </a>
+          }
+
+          <a routerLink="/health/vaccinations"
+             class="card hover:shadow-md transition-shadow border-l-4 border-teal-400">
+            <p class="text-xs uppercase tracking-wide text-gray-400 font-medium">Carnet vaccinal</p>
+            <p class="text-3xl font-bold text-gray-900 mt-2">{{ vaccineCountLabel() }}</p>
+            @if (vaccinations()?.latest; as latest) {
+              <p class="text-sm text-gray-500 mt-1">
+                Dernier : {{ latest.displayName }} · {{ formatLocalDate(latest.administeredOn) }}
+              </p>
+            } @else {
+              <p class="text-sm text-gray-400 mt-3">Aucune dose. Déclarez un vaccin reçu.</p>
+            }
+            <p class="text-sm text-primary-600 font-medium mt-4">Ouvrir le carnet →</p>
+          </a>
+        </div>
       }
     </div>
   `,
@@ -87,13 +105,26 @@ import {
 export class HealthHubComponent implements OnInit {
   loading = signal(true);
   summary = signal<VitalSummaryDto | null>(null);
+  pregnancy = signal<PregnancyOverviewDto | null>(null);
+  vaccinations = signal<VaccinationOverviewDto | null>(null);
+  readonly formatLocalDate = formatLocalDate;
 
-  constructor(private vitalService: VitalService) {}
+  constructor(
+    private vitalService: VitalService,
+    private pregnancyService: PregnancyService,
+    private vaccinationService: VaccinationService
+  ) {}
 
   ngOnInit(): void {
-    this.vitalService.getMySummary().subscribe({
-      next: (s) => {
-        this.summary.set(s);
+    forkJoin({
+      vitals: this.vitalService.getMySummary(),
+      pregnancy: this.pregnancyService.getMine(),
+      vaccinations: this.vaccinationService.getMine(),
+    }).subscribe({
+      next: ({ vitals, pregnancy, vaccinations }) => {
+        this.summary.set(vitals);
+        this.pregnancy.set(pregnancy);
+        this.vaccinations.set(vaccinations);
         this.loading.set(false);
       },
       error: () => this.loading.set(false),
@@ -129,5 +160,11 @@ export class HealthHubComponent implements OnInit {
 
   glucoseBadge(g: GlucoseReadingDto): string {
     return g.classification ? GLUCOSE_CLASS_BADGE[g.classification] : '';
+  }
+
+  vaccineCountLabel(): string {
+    const total = this.vaccinations()?.total ?? 0;
+    if (total === 0) return '—';
+    return total === 1 ? '1 dose' : `${total} doses`;
   }
 }

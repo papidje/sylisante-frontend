@@ -13,6 +13,10 @@ export interface SharedReportDto {
   patientId: number;
   patientName: string;
   content: string;
+  diagnosis: string | null;
+  treatment: string | null;
+  exams: string | null;
+  instructions: string | null;
   createdAt: string;
 }
 

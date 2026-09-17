@@ -10,6 +10,7 @@ import { formatLocalDateTime, parseLocalDateTime } from '../../../core/utils/dat
 import { SyliSpinnerComponent } from '../../../shared/components/syli-spinner/syli-spinner.component';
 import { UserProfileModalComponent } from '../../../shared/components/user-profile-modal/user-profile-modal.component';
 import { CreateAppointmentModalComponent } from '../../../shared/components/create-appointment-modal/create-appointment-modal.component';
+import { PatientClinicalSheetComponent } from '../patient-clinical-sheet/patient-clinical-sheet.component';
 
 type CalendarView = 'day' | 'week' | 'month';
 
@@ -23,7 +24,7 @@ interface CalendarDay {
 @Component({
   selector: 'app-practitioner-calendar',
   standalone: true,
-  imports: [CommonModule, RouterLink, SyliSpinnerComponent, UserProfileModalComponent, CreateAppointmentModalComponent],
+  imports: [CommonModule, RouterLink, SyliSpinnerComponent, UserProfileModalComponent, CreateAppointmentModalComponent, PatientClinicalSheetComponent],
   template: `
     <div class="max-w-7xl mx-auto px-4 py-6">
 
@@ -263,10 +264,11 @@ interface CalendarDay {
         <div class="fixed inset-0 z-50 flex items-center justify-center p-4"
              (click)="closeModal()">
           <div class="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
-          <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md"
+          <div class="relative bg-white rounded-2xl shadow-2xl w-full max-h-[90vh] flex flex-col"
+               [class.max-w-md]="modalTab() === 'rdv'"
+               [class.max-w-3xl]="modalTab() === 'clinique'"
                (click)="$event.stopPropagation()">
 
-            <!-- En-tête coloré -->
             <div class="rounded-t-2xl px-6 py-4 flex items-center justify-between"
                  [class]="modalHeaderBg(modalAppointment()!.status)">
               <div>
@@ -285,9 +287,26 @@ interface CalendarDay {
               </button>
             </div>
 
-            <!-- Corps -->
-            <div class="px-6 py-5 space-y-4">
-              <!-- Statut -->
+            @if (!authService.isSecretary()) {
+              <div class="px-6 pt-3 flex gap-1 border-b border-gray-100">
+                <button type="button" class="px-3 py-2 text-sm font-medium rounded-t-lg"
+                        [class.text-primary-700]="modalTab() === 'rdv'"
+                        [class.border-b-2]="modalTab() === 'rdv'"
+                        [class.border-primary-600]="modalTab() === 'rdv'"
+                        [class.text-gray-500]="modalTab() !== 'rdv'"
+                        (click)="modalTab.set('rdv')">RDV</button>
+                <button type="button" class="px-3 py-2 text-sm font-medium rounded-t-lg"
+                        [class.text-primary-700]="modalTab() === 'clinique'"
+                        [class.border-b-2]="modalTab() === 'clinique'"
+                        [class.border-primary-600]="modalTab() === 'clinique'"
+                        [class.text-gray-500]="modalTab() !== 'clinique'"
+                        (click)="modalTab.set('clinique')">Clinique</button>
+              </div>
+            }
+
+            <div class="overflow-y-auto flex-1">
+              @if (modalTab() === 'rdv') {
+                <div class="px-6 py-5 space-y-4">
               <div class="flex items-center justify-between">
                 <span class="text-sm text-gray-500">Statut</span>
                 <span [class]="getStatusBadgeClass(modalAppointment()!.status)" class="text-xs font-semibold">
@@ -339,15 +358,23 @@ interface CalendarDay {
                   </span>
                 </div>
               }
+                </div>
+              } @else {
+                <div class="px-6 py-5">
+                  <p class="text-xs text-gray-500 mb-3">
+                    Constantes et faits du patient — la secrétaire n'a pas cet accès. Notes médecin hors CR restent cloisonnées.
+                  </p>
+                  <app-patient-clinical-sheet [patientUserId]="modalAppointment()!.patientId" [compact]="true" />
+                </div>
+              }
             </div>
 
-            <!-- Actions -->
-            <div class="px-6 pb-5 flex flex-wrap gap-3">
+            <div class="px-6 pb-5 pt-2 flex flex-wrap gap-3 border-t border-gray-50">
               <button type="button" (click)="openPatientProfile(modalAppointment()!.patientId)"
                       class="btn-secondary flex-1 text-sm min-w-[140px]">
                 Fiche patient
               </button>
-              @if (modalAppointment()!.status === 'CONFIRMED') {
+              @if (!authService.isSecretary() && (modalAppointment()!.status === 'CONFIRMED' || modalAppointment()!.status === 'COMPLETED')) {
                 <button (click)="goToReport(modalAppointment()!.id)"
                         class="btn-secondary flex-1 text-sm">
                   Compte rendu
@@ -386,6 +413,7 @@ export class PractitionerCalendarComponent implements OnInit {
   appointments   = signal<AppointmentResponse[]>([]);
   loading        = signal(true);
   modalAppointment = signal<AppointmentResponse | null>(null);
+  modalTab = signal<'rdv' | 'clinique'>('rdv');
   actionLoading  = signal(false);
   profileModalVisible = signal(false);
   profileModalUserId = signal<number | null>(null);
@@ -537,7 +565,10 @@ export class PractitionerCalendarComponent implements OnInit {
     });
   }
 
-  openModal(appt: AppointmentResponse): void  { this.modalAppointment.set(appt); }
+  openModal(appt: AppointmentResponse): void  {
+    this.modalTab.set('rdv');
+    this.modalAppointment.set(appt);
+  }
   closeModal(): void { this.modalAppointment.set(null); }
 
   openCreateModal(date?: Date): void {
