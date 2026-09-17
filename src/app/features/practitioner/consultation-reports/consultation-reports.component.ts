@@ -6,6 +6,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ConsultationReportService, ConsultationReportDto } from '../../../core/services/consultation-report.service';
 import { AppointmentService } from '../../../core/services/appointment.service';
 import { ClinicalProfileService } from '../../../core/services/clinical-profile.service';
+import { PatientVitalsPanelComponent } from '../patient-vitals-panel/patient-vitals-panel.component';
 import {
   BloodType,
   BLOOD_TYPE_LABELS,
@@ -27,7 +28,7 @@ type ViewMode = 'list' | 'patient-history' | 'new-report';
 @Component({
   selector: 'app-consultation-reports',
   standalone: true,
-  imports: [  CommonModule, FormsModule, ReactiveFormsModule, SyliSpinnerComponent],
+  imports: [  CommonModule, FormsModule, ReactiveFormsModule, SyliSpinnerComponent, PatientVitalsPanelComponent],
   template: `
     <div class="max-w-5xl mx-auto px-4 py-8">
 
@@ -200,6 +201,10 @@ type ViewMode = 'list' | 'patient-history' | 'new-report';
                 <p class="text-xs text-red-600 mt-2">{{ clinicalError() }}</p>
               }
             </div>
+          }
+
+          @if (selectedPatientId()) {
+            <app-patient-vitals-panel [patientUserId]="selectedPatientId()!" />
           }
 
           @if (loadingPatientHistory()) {

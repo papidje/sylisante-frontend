@@ -8,6 +8,16 @@ import { formatLocalDateTime, parseLocalDateTime } from '../../../core/utils/dat
 import { SyliSpinnerComponent } from '../../../shared/components/syli-spinner/syli-spinner.component';
 import { ClinicalProfileService } from '../../../core/services/clinical-profile.service';
 import { ClinicalProfileDto } from '../../../core/models/clinical-profile.model';
+import { VitalService } from '../../../core/services/vital.service';
+import {
+  BloodPressureReadingDto,
+  GlucoseReadingDto,
+  VitalSummaryDto,
+  BP_CLASS_BADGE,
+  GLUCOSE_CLASS_BADGE,
+  formatBp,
+  formatGlucoseValue,
+} from '../../../core/models/vital.model';
 
 @Component({
   selector: 'app-patient-dashboard',
@@ -44,7 +54,7 @@ import { ClinicalProfileDto } from '../../../core/models/clinical-profile.model'
       </div>
 
       <!-- Action rapide -->
-      <div class="grid sm:grid-cols-3 gap-4 mb-8">
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <a routerLink="/appointments/book"
            class="card flex items-center gap-4 hover:shadow-md transition-shadow cursor-pointer border-2 border-dashed border-primary-200 hover:border-primary-400 bg-primary-50">
           <div class="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -83,6 +93,19 @@ import { ClinicalProfileDto } from '../../../core/models/clinical-profile.model'
             <p class="text-sm text-gray-500">Comptes rendus partagés</p>
           </div>
         </a>
+        <a routerLink="/health"
+           class="card flex items-center gap-4 hover:shadow-md transition-shadow cursor-pointer">
+          <div class="w-12 h-12 bg-rose-50 rounded-xl flex items-center justify-center flex-shrink-0">
+            <svg class="w-6 h-6 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+            </svg>
+          </div>
+          <div>
+            <p class="font-semibold text-gray-900">Suivi tension &amp; glycémie</p>
+            <p class="text-sm text-gray-500">Saisie à domicile, courbes et alertes</p>
+          </div>
+        </a>
       </div>
 
       @if (clinical()) {
@@ -104,6 +127,33 @@ import { ClinicalProfileDto } from '../../../core/models/clinical-profile.model'
             <p class="text-sm font-semibold text-gray-900 mt-1">{{ clinical()!.nationalId || 'Non renseigné' }}</p>
             <a routerLink="/patient-profile" class="text-xs text-primary-600 mt-2 inline-block">Compléter mon dossier</a>
           </div>
+        </div>
+      }
+
+      @if (vitals(); as v) {
+        <div class="grid sm:grid-cols-2 gap-4 mb-8">
+          <a routerLink="/health/blood-pressure" class="card hover:shadow-md transition-shadow">
+            <p class="text-xs uppercase tracking-wide text-gray-400 font-medium">Tension</p>
+            @if (v.latestBloodPressure; as bp) {
+              <p class="text-xl font-bold text-gray-900 mt-1">{{ formatBp(bp) }} mmHg</p>
+              <span class="inline-flex mt-2 text-xs font-medium px-2 py-0.5 rounded-full border"
+                    [class]="bpBadge(bp)">{{ bp.classificationLabel }}</span>
+            } @else {
+              <p class="text-xl font-bold text-gray-900 mt-1">Aucune mesure</p>
+            }
+          </a>
+          <a routerLink="/health/diabetes" class="card hover:shadow-md transition-shadow">
+            <p class="text-xs uppercase tracking-wide text-gray-400 font-medium">Glycémie</p>
+            @if (v.latestGlucose; as g) {
+              <p class="text-xl font-bold text-gray-900 mt-1">{{ formatGlucoseValue(g.fasting ?? g.postprandial) }}</p>
+              @if (g.classificationLabel) {
+                <span class="inline-flex mt-2 text-xs font-medium px-2 py-0.5 rounded-full border"
+                      [class]="glucoseBadge(g)">{{ g.classificationLabel }}</span>
+              }
+            } @else {
+              <p class="text-xl font-bold text-gray-900 mt-1">Aucune mesure</p>
+            }
+          </a>
         </div>
       }
 
@@ -177,11 +227,13 @@ export class PatientDashboardComponent implements OnInit {
   completedCount = signal(0);
   upcomingAppointments = signal<AppointmentResponse[]>([]);
   clinical = signal<ClinicalProfileDto | null>(null);
+  vitals = signal<VitalSummaryDto | null>(null);
 
   constructor(
     public authService: AuthService,
     private appointmentService: AppointmentService,
-    private clinicalProfileService: ClinicalProfileService
+    private clinicalProfileService: ClinicalProfileService,
+    private vitalService: VitalService
   ) {}
 
   ngOnInit(): void {
@@ -195,6 +247,9 @@ export class PatientDashboardComponent implements OnInit {
     });
     this.clinicalProfileService.getMine().subscribe({
       next: (c) => this.clinical.set(c),
+    });
+    this.vitalService.getMySummary().subscribe({
+      next: (v) => this.vitals.set(v),
     });
   }
 
@@ -221,6 +276,17 @@ export class PatientDashboardComponent implements OnInit {
   allergySummary(): string {
     const allergies = this.clinical()?.allergies ?? [];
     return allergies.length ? allergies.map(a => a.substance).join(', ') : 'Aucune déclarée';
+  }
+
+  readonly formatBp = formatBp;
+  readonly formatGlucoseValue = formatGlucoseValue;
+
+  bpBadge(bp: BloodPressureReadingDto): string {
+    return BP_CLASS_BADGE[bp.classification];
+  }
+
+  glucoseBadge(g: GlucoseReadingDto): string {
+    return g.classification ? GLUCOSE_CLASS_BADGE[g.classification] : '';
   }
 
   getStatusLabel(status: AppointmentStatus): string {

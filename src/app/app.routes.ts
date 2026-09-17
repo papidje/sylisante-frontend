@@ -256,6 +256,32 @@ export const routes: Routes = [
       ),
   },
 
+  // Suivi constantes (Patient)
+  {
+    path: 'health',
+    canActivate: [authGuard, accountAccessGuard, roleGuard('ROLE_PATIENT')],
+    loadComponent: () =>
+      import('./features/patient/health-hub/health-hub.component').then(
+        m => m.HealthHubComponent
+      ),
+  },
+  {
+    path: 'health/blood-pressure',
+    canActivate: [authGuard, accountAccessGuard, roleGuard('ROLE_PATIENT')],
+    loadComponent: () =>
+      import('./features/patient/blood-pressure/blood-pressure.component').then(
+        m => m.BloodPressureComponent
+      ),
+  },
+  {
+    path: 'health/diabetes',
+    canActivate: [authGuard, accountAccessGuard, roleGuard('ROLE_PATIENT')],
+    loadComponent: () =>
+      import('./features/patient/diabetes/diabetes.component').then(
+        m => m.DiabetesComponent
+      ),
+  },
+
   // Admin
   {
     path: 'admin',

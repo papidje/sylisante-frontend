@@ -11,6 +11,7 @@ export type NotificationType =
   | 'TRANSFER_REJECTED'
   | 'TRANSFER_RECEIVED'
   | 'CONSULTATION_REPORT_SHARED'
+  | 'VITAL_ALERT'
   | 'ACCOUNT_SUSPENDED'
   | 'ACCOUNT_ACTIVATED'
   | 'SUBSCRIPTION_EXPIRED'
@@ -52,6 +53,7 @@ export const NOTIFICATION_ICONS: Record<NotificationType, string> = {
   TRANSFER_REJECTED:      '🔒',
   TRANSFER_RECEIVED:      '📥',
   CONSULTATION_REPORT_SHARED: '📋',
+  VITAL_ALERT:            '🚨',
   ACCOUNT_SUSPENDED:      '🚫',
   ACCOUNT_ACTIVATED:      '🎉',
   SUBSCRIPTION_EXPIRED:   '⏳',
@@ -93,6 +95,10 @@ export function notificationRoute(n: NotificationDto, isAdmin: boolean): string 
 
   if (n.referenceType === 'SECRETARY_RELATION') {
     return '/dashboard/secretary';
+  }
+
+  if (n.type === 'VITAL_ALERT' || n.referenceType === 'VITAL') {
+    return '/health/blood-pressure';
   }
 
   if (!n.referenceId) return null;
