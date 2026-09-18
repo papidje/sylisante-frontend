@@ -90,6 +90,18 @@ export class AuthService {
     return this.http.post<{ message: string }>('/api/auth/resend-code', request);
   }
 
+  forgotPassword(email: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>('/api/auth/forgot-password', { email });
+  }
+
+  resetPassword(token: string, newPassword: string, confirmPassword: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>('/api/auth/reset-password', {
+      token,
+      newPassword,
+      confirmPassword,
+    });
+  }
+
   login(request: LoginRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>('/api/auth/login', request).pipe(
       tap(response => {

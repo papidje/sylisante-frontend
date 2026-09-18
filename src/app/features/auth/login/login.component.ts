@@ -89,6 +89,12 @@ import { SyliSpinnerComponent } from '../../../shared/components/syli-spinner/sy
                 @if (isFieldInvalid('password')) {
                   <p class="error-message">{{ getFieldError('password') }}</p>
                 }
+                <p class="mt-2 text-right">
+                  <a routerLink="/auth/forgot-password"
+                     class="text-sm text-[#0EA5E9] font-medium hover:underline">
+                    Mot de passe oublié ?
+                  </a>
+                </p>
               </div>
 
               <button
