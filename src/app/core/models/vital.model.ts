@@ -11,16 +11,16 @@ export const VITAL_SOURCE_LABELS: Record<VitalSource, string> = {
 };
 
 export const BP_CLASS_BADGE: Record<BloodPressureClass, string> = {
-  NORMAL: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  ELEVATED: 'bg-amber-50 text-amber-800 border-amber-200',
-  HYPERTENSION: 'bg-orange-50 text-orange-800 border-orange-200',
-  CRISIS: 'bg-red-50 text-red-700 border-red-200',
+  NORMAL: 'bg-emerald-50 text-emerald-700 border-emerald-300',
+  ELEVATED: 'bg-orange-50 text-orange-700 border-orange-300',
+  HYPERTENSION: 'bg-red-50 text-red-700 border-red-300',
+  CRISIS: 'bg-red-50 text-red-800 border-red-400',
 };
 
 export const GLUCOSE_CLASS_BADGE: Record<GlucoseClass, string> = {
-  NORMAL: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  PREDIABETES: 'bg-amber-50 text-amber-800 border-amber-200',
-  HIGH: 'bg-red-50 text-red-700 border-red-200',
+  NORMAL: 'bg-emerald-50 text-emerald-700 border-emerald-300',
+  PREDIABETES: 'bg-orange-50 text-orange-700 border-orange-300',
+  HIGH: 'bg-red-50 text-red-700 border-red-300',
 };
 
 export const SOURCE_BADGE: Record<VitalSource, string> = {
@@ -103,6 +103,15 @@ export function formatVitalDate(s: string | null | undefined): string {
   if (!s) return '';
   const normalized = s.replace(/Z$/, '').replace(/[+-]\d{2}:\d{2}$/, '').split('.')[0];
   return formatLocalDateTime(normalized);
+}
+
+/** Date courte d'une mesure, sans conversion de fuseau. Ex. 11/10 */
+export function formatVitalDayMonth(s: string | null | undefined): string {
+  if (!s) return '';
+  const datePart = s.replace(/Z$/, '').replace(/[+-]\d{2}:\d{2}$/, '').split('T')[0];
+  const [, month, day] = datePart.split('-');
+  if (!day || !month) return '';
+  return `${day.padStart(2, '0')}/${month.padStart(2, '0')}`;
 }
 
 export function formatBp(reading: BloodPressureReadingDto | null | undefined): string {

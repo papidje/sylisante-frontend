@@ -26,7 +26,7 @@ import {
   imports: [FormsModule, RouterLink, SyliSpinnerComponent],
   template: `
     <div class="max-w-3xl mx-auto px-4 py-8">
-      <a routerLink="/health" class="text-sm text-primary-600 hover:text-primary-700">← Suivi</a>
+      <a routerLink="/dashboard/patient" class="text-sm text-primary-600 hover:text-primary-700">← Accueil</a>
       <h1 class="text-2xl font-bold text-gray-900 mt-3">Carnet vaccinal</h1>
       <p class="text-gray-500 mt-1 text-sm">
         Catalogue PEV / usage courant. Pas de certificat ni de QR en V1 — ce n'est pas un calendrier « à jour ».

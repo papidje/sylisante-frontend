@@ -270,15 +270,8 @@ export const routes: Routes = [
       ),
   },
 
-  // Suivi constantes (Patient)
-  {
-    path: 'health',
-    canActivate: [authGuard, accountAccessGuard, roleGuard('ROLE_PATIENT')],
-    loadComponent: () =>
-      import('./features/patient/health-hub/health-hub.component').then(
-        m => m.HealthHubComponent
-      ),
-  },
+  // Ancien hub de suivi : chaque constante s'ouvre depuis l'accueil
+  { path: 'health', pathMatch: 'full', redirectTo: '/dashboard/patient' },
   {
     path: 'health/blood-pressure',
     canActivate: [authGuard, accountAccessGuard, roleGuard('ROLE_PATIENT')],
